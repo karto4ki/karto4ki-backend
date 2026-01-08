@@ -1,0 +1,779 @@
+openapi: 3.0.3
+info:
+  title: Identity Service
+  description: Identity Service REST API 
+  version: "1.0"
+servers:
+  - url: http://localhost:80/api/identity/v1.0/
+tags:
+  - name: sign in/out
+    description: Sign In user
+  - name: signup
+    description: Sign Up user
+paths:
+  /signin/send-email-code:
+    post:
+      summary: Sign In user
+      description: | 
+        Sign In user
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `user_not_found`
+        - `send_code_freq_exceeded`
+        - `internal`
+      tags:
+        - sign in/out
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SendCodeRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SendCodeResponse'
+        '400':
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '404':
+          description: Not Found.
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /signin:
+    post:
+      summary: Sign In user
+      description: |
+        Sign In user
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `signin_key_not_found`
+        - `wrong_code`
+        - `internal`
+      tags:
+        - sign in/out
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SignInRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SignInResponse'
+        '400':
+          description: Bad Request.
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+  /refresh-token:
+    post:
+      summary: Refresh user token
+      description: |
+        Refresh user token
+        Possible `error_type` values:
+        - `invalid_json`
+        - `refresh_token_expired`
+        - `refresh_token_invalidated`
+        - `invalid_token_type`
+        - `invalid_token`
+        - `internal`
+      tags:
+        - sign in/out
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/RefreshTokenRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RefreshTokenResponse'
+        '400':
+          description: Bad Request.
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+  /signin/oauth/google:
+    post:
+      summary: Log in with google account
+      description: |
+        Sign In user
+        If user exists returns tokens, else - returns status need_registration with temp token
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `signin_key_not_found`
+        - `wrong_token`
+        - `internal`
+      tags:
+        - sign in/out
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SignInGoogleRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SignInSuccessResponse'
+                  - $ref: '#/components/schemas/SignInRegistrationRequiredResponse'
+                discriminator:
+                  propertyName: status
+        '400':
+          description: Bad Request.
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+           application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+  /signin/oauth/apple:
+    post:
+      summary: Log in with apple id
+      description: |
+        Sign In user
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `signin_key_not_found`
+        - `wrong_token`
+        - `internal`
+      tags:
+        - sign in/out
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SignInGoogleRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SignInSuccessResponse'
+                  - $ref: '#/components/schemas/SignInRegistrationRequiredResponse'
+                discriminator:
+                  propertyName: status
+        '400':
+          description: Bad Request.
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+           application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+
+  # handler to complete data from google or apple with username
+  /signin/oauth/register:
+    post:
+      summary: Set name and username to a profile
+      description: |
+        Sign In user
+        Finishing registration after oauth authorization only for new users
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `user_already_exists`
+        - `send_code_freq_exceeded`
+        - `internal`
+      tags:
+        - sign in/out
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/CompleteRegistrationRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SignInSuccessResponse'
+        '400':
+          description: Bad Request.
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+           application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '409':
+          description: Username already exist
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: 
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+
+            
+  /sign-out:
+    put:
+      summary: Sign Out user
+      description: | 
+        Sign Out user
+        Possible `error_type` values:
+        - `invalid_json`
+        - `invalid_token`
+        - `internal`
+      tags:
+        - sign in/out
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: jwt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SignOutRequest"
+      responses:
+        '200':
+          description: OK. Also returned if the user's refresh token already expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /signup/send-email-code:
+    post:
+      summary: Request for email verification code.
+      description: |
+        Signup user
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `user_already_exists`
+        - `send_code_freq_exceeded`
+        - `internal`
+      tags:
+        - signup
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SignUpSendEmailCodeRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    "$ref": '#/components/schemas/SignUpSendEmailCodeResponse'
+        '400':
+          description: Bad Request. Maybe phone number is already used.
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /signup/verify-code:
+    post:
+      summary: Verify email verification code.
+      description: |
+        Verify email verification code
+        Possible `error_type` values:
+        - `invalid_json`
+        - `signup_key_not_found`
+        - `wrong_code`
+        - `internal`
+      tags:
+        - signup
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SignUpVerifyEmailCodeRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/EmptySuccessResponse'
+        '400':
+          description: Bad Request. Maybe phone number is already used or code is invalid.
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+  /signup:
+    post:
+      summary: Sign Up user
+      description: |
+        Sign Up user
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `user_already_exists`
+        - `signup_key_not_found`
+        - `email_not_verified`
+        - `internal`
+      tags:
+        - signup
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              "$ref": "#/components/schemas/SignUpRequest"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SignInResponse'
+        '400':
+          description: Bad Request.
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+components:
+  schemas:
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          format: jwt
+          nullable: false
+      required:
+        - refresh_token
+      example:
+        refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODlhczAiLCJuYW1lIjoiSm9obiBEZHNvZSIsImlhdCI6MTUxNjIzOTAyMn0.gMtW_LPAMSJXOwU4GhTlnC7tgLI_ILtrr6CQw26U784
+    RefreshTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          format: jwt
+          nullable: false
+        refresh_token:
+          type: string
+          format: jwt
+          nullable: false
+      required:
+        - access_token  
+        - refresh_token
+      example:
+        access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODlhczAiLCJuYW1lIjoiSm9obiBEZHNvZSIsImlhdCI6MTUxNjIzOTAyMn0.gMtW_LPAMSJXOwU4GhTlnC7tgLI_ILtrr6CQw26U784
+    SendCodeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: false
+      required:
+        - email
+    SendCodeResponse:
+      type: object
+      properties:
+        signin_key:
+          description: The device should use the key generated for email code request. It connects requests.
+          type: string
+          format: uuid
+          nullable: false
+      required:
+        - signin_key
+    SignInResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          format: jwt
+          nullable: false
+        refresh_token:
+          type: string
+          format: jwt
+          nullable: false
+      required:
+        - access_token
+        - refresh_token
+      example:
+        access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODlhczAiLCJuYW1lIjoiSm9obiBEZHNvZSIsImlhdCI6MTUxNjIzOTAyMn0.gMtW_LPAMSJXOwU4GhTlnC7tgLI_ILtrr6CQw26U784
+    SignInRequest:
+      type: object
+      properties:
+        signin_key:
+          description: The device should generate the key and use it to sign in 
+          type: string
+          format: uuid
+          nullable: false
+        code:
+          type: string
+          nullable: false
+      required:
+        - signin_key
+        - code
+    SignInGoogleRequest:
+      type: object
+      properties:
+        token:
+          description: Google id token
+          type: string
+          format: uuid
+          nullable: false
+      required:
+        - token
+    SignInSuccessResponse:
+      type: object
+      properties:
+        status: 
+          enum: [success]
+          type: string
+          nullable: false
+          example: "registered"
+        data:
+          "$ref": "#/components/schemas/AuthData"
+      required:
+        - access_token
+        - data
+    SignInRegistrationRequiredResponse:
+      type: object
+      properties:
+        status: 
+          enum: [need_registration]
+          type: string
+          nullable: false
+          example: "need_registration"
+        data:
+          "$ref": "#/components/schemas/RegistartionData"
+      required:
+        - access_token
+        - data
+    RegistartionData:
+      type: object
+      properties:
+        temp_token:
+          type: string
+          description: Временный токен для завершения регистрации
+          example: "temp_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        email:
+          type: string
+          format: email
+          description: Email пользователя от провайдера
+          example: "john@gmail.com"
+          nullable: true
+        provided_name:
+          type: string
+          description: Имя, полученное от провайдера
+          example: "John Doe"
+          nullable: true
+        avatar_url:
+          type: string
+          format: uri
+          description: URL аватара от провайдера
+          example: "https://lh3.googleusercontent.com/a/..."
+          nullable: true
+
+    AuthData:
+      properties:     
+        access_token:
+          type: string
+          format: jwt
+          nullable: false
+        refresh_token:
+          type: string
+          format: jwt
+          nullable: false
+        user:
+          "$ref": "#/components/schemas/UserData"
+      required:
+        - access_token
+        - refresh_token
+        - user
+    SignOutRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          format: jwt
+          nullable: false
+      required:
+        - refresh_token
+    SignUpSendEmailCodeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: false
+      required:
+        - email
+    SignUpSendEmailCodeResponse:
+      type: object
+      properties:
+        signup_key:
+          description: The device should use the key generated for email code request. It connects requests.
+          type: string
+          format: uuid
+          nullable: false
+      required:
+        - signin_key
+    SignUpVerifyEmailCodeRequest:
+      type: object
+      properties:
+        signup_key:
+          type: string
+          format: uuid
+          nullable: false
+        code:
+          type: string
+          nullable: false
+      required:
+        - signup_key
+        - code
+    SignUpRequest:
+      properties:
+        signup_key:
+          type: string
+          format: uuid
+          nullable: false
+        name:
+          type: string
+          nullable: false
+        username:
+          type: string
+          nullable: false
+      required:
+        - signin_key
+        - name
+        - username
+    CompleteRegistrationRequest:
+      type: object
+      properties:
+        temp_token:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: John Doe
+        username:
+          type: string
+          description: unique nickname
+          example: johndoe
+    UserData:
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: false
+        email:
+          type: string
+          nullable: true
+        name:
+          type: string
+          nullable: false
+        username:
+          type: string
+          nullable: false
+        created_at:
+          type: string
+          format: date
+          nullable: false
+      required:
+        - id
+        - name
+        - username
+        - created_at
+    EmptySuccessResponse:
+      type: object
+      example: {}
+    ErrorResponseWithDetails:
+      type: object
+      description: Error response specified by standard.md
+      properties:
+        error_type:
+          type: string
+          nullable: false
+        error_message:
+          type: string
+          nullable: false
+        error_details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                nullable: false
+              message:
+                type: string
+                nullable: false
+      example:
+        error_type: verification_failed
+        error_message: Input is invalid
+        error_details:
+          - field: some_field
+            message: Some field is invalid  
+    ErrorResponse:
+      type: object
+      description: Error response specified by standard.md
+      properties:
+        error_type:
+          type: string
+          nullable: false
+        error_message:
+          type: string
+          nullable: false
+        error_details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                nullable: false
+              message:
+                type: string
+                nullable: false
+      example:
+        error_type: invalid_input
+        error_message: Input is invalid
+        error_details: []
