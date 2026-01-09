@@ -572,7 +572,7 @@ components:
         data:
           "$ref": "#/components/schemas/AuthData"
       required:
-        - access_token
+        - status
         - data
     SignInRegistrationRequiredResponse:
       type: object
@@ -585,7 +585,7 @@ components:
         data:
           "$ref": "#/components/schemas/RegistartionData"
       required:
-        - access_token
+        - status
         - data
     RegistartionData:
       type: object
@@ -655,7 +655,7 @@ components:
           format: uuid
           nullable: false
       required:
-        - signin_key
+        - signup_key
     SignUpVerifyEmailCodeRequest:
       type: object
       properties:
@@ -682,7 +682,7 @@ components:
           type: string
           nullable: false
       required:
-        - signin_key
+        - signup_key
         - name
         - username
     CompleteRegistrationRequest:
