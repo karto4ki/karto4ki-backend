@@ -57,11 +57,10 @@ func RefreshJWT(service RefreshJWTService) gin.HandlerFunc {
 				c.Error(err)
 				restapi.SendInternalError(c)
 			}
-
-			restapi.SendSuccess(c, refreshJWTResponse{
-				AccessToken:  string(pair.Access),
-				RefreshToken: string(pair.Refresh),
-			})
 		}
+		restapi.SendSuccess(c, refreshJWTResponse{
+			AccessToken:  string(pair.Access),
+			RefreshToken: string(pair.Refresh),
+		})
 	}
 }
