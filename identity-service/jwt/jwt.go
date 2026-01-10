@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 )
 
@@ -40,6 +40,10 @@ type Config struct {
 	SymmetricKey []byte // Used for symmetric signing
 }
 
+var nowFunc = func() time.Time {
+	return time.Now()
+}
+
 type Claims map[string]any
 
 func Generate(conf *Config, claims Claims) (Token, error) {
@@ -57,21 +61,15 @@ func Generate(conf *Config, claims Claims) (Token, error) {
 		claims["typ"] = conf.Type
 	}
 
-	now := time.Now()
+	now := nowFunc()
 	claims["iat"] = now.Unix()
 	claims["exp"] = now.Add(conf.Lifetime).Unix()
 
 	token := jwt.NewWithClaims(meth, jwt.MapClaims(claims))
 	var key interface{}
 	if isSymmetricMethod(meth) {
-		if len(conf.SymmetricKey) == 0 {
-			return "", errors.New("symmetric key required for HMAC algorithm")
-		}
 		key = conf.SymmetricKey
 	} else {
-		if conf.privateKey == nil {
-			return "", errors.New("private key required for RSA/ECDSA algorithm")
-		}
 		key = conf.privateKey
 	}
 
@@ -83,35 +81,31 @@ func Parse(conf *Config, token Token) (jwt.MapClaims, error) {
 	claims := jwt.MapClaims{}
 	parsed, err := jwt.ParseWithClaims(string(token), claims, func(token *jwt.Token) (interface{}, error) {
 		method := jwt.GetSigningMethod(conf.SigningMethod)
-		if method == nil {
-			return nil, ErrInvalidSignInMethod
-		}
-
-		if token.Method.Alg() != method.Alg() {
-			return nil, ErrInvalidSignInMethod
-		}
-
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); ok {
+		if isSymmetricMethod(method) {
 			return conf.SymmetricKey, nil
-		} else {
-			return conf.publicKey, nil
 		}
+		return conf.publicKey, nil
 	})
 
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
+		if jwtErr, ok := err.(*jwt.ValidationError); ok && jwtErr.Errors&jwt.ValidationErrorExpired != 0 {
 			return nil, ErrTokenExpired
 		}
-		if !parsed.Valid {
-			return nil, ErrInvalidToken
-		}
-		if conf.Type != "" {
-			if typ, ok := claims["typ"].(string); !ok || typ != conf.Type {
-				return nil, ErrInvalidTokenType
-			}
-		}
+		return nil, err
+	}
+	if !parsed.Valid {
 		return nil, ErrInvalidToken
 	}
+	if conf.Issuer != "" && !claims.VerifyIssuer(conf.Issuer, true) {
+		return nil, errors.New("invalid issuer")
+	}
+
+	if conf.Type != "" {
+		if typ, ok := claims["typ"].(string); !ok || typ != conf.Type {
+			return nil, ErrInvalidTokenType
+		}
+	}
+
 	if iat, ok := claims["iat"].(float64); ok {
 		claims["iat"] = int64(iat)
 	}
@@ -119,6 +113,18 @@ func Parse(conf *Config, token Token) (jwt.MapClaims, error) {
 		claims["exp"] = int64(exp)
 	}
 	claims["jti"] = uuid.NewString()
+
+	return claims, nil
+}
+
+func ParseWithAud(conf *Config, token Token, aud string) (jwt.MapClaims, error) {
+	claims, err := Parse(conf, token)
+	if err != nil {
+		return nil, err
+	}
+	if !claims.VerifyAudience(aud, true) {
+		return nil, errors.New("invalid audience")
+	}
 
 	return claims, nil
 }
