@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/chakchat/chakchat-backend/shared/go/jwt"
+	"github.com/karto4ki/karto4ki-backend/identity-service/jwt"
 )
 
 var (
@@ -57,15 +57,15 @@ func (service *RefreshJWTService) Refresh(ctx context.Context, refresh jwt.Token
 		return jwt.Pair{}, ErrRevokeToken
 	}
 
-	if claims[jwt.ClaimSub] == nil {
+	if claims["sub"] == nil {
 		return jwt.Pair{}, ErrInvalidClaims
 	}
 
 	var pair jwt.Pair
-	if pair.Access, err = jwt.Generate(service.accessConf, claims); err != nil {
+	if pair.Access, err = jwt.Generate(service.accessConf, jwt.Claims(claims)); err != nil {
 		return jwt.Pair{}, ErrAccessGeneration
 	}
-	if pair.Refresh, err = jwt.Generate(service.refreshConf, claims); err != nil {
+	if pair.Refresh, err = jwt.Generate(service.refreshConf, jwt.Claims(claims)); err != nil {
 		return jwt.Pair{}, ErrRefreshGeneration
 	}
 	return pair, nil
