@@ -13,4 +13,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0' 
+          cache: true
+          cache-dependency-path: ./identity-service/go.sum
+      
+      - name: Verify Go modules
+        run: |
+          cd identity-service
+          go mod verify
+      
+      - name: Run tests
+        run: |
+          cd identity-service
+          go test ./... -v -coverprofile=coverage.out
