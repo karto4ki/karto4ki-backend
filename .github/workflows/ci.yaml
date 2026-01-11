@@ -27,5 +27,5 @@ jobs:
       
       - name: Run tests
         run: |
-          cd identity-service
+          cd tests
           go test ./... -v -coverprofile=coverage.out
