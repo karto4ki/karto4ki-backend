@@ -18,7 +18,7 @@ type refreshJWTRequest struct {
 	RefreshToken string `json: "refresh_token"`
 }
 
-type refreshJWTResponse struct {
+type JWTPairResponse struct {
 	AccessToken  string `json: "access_token"`
 	RefreshToken string `json: "refresh_token"`
 }
@@ -58,7 +58,7 @@ func RefreshJWT(service RefreshJWTService) gin.HandlerFunc {
 				restapi.SendInternalError(c)
 			}
 		}
-		restapi.SendSuccess(c, refreshJWTResponse{
+		restapi.SendSuccess(c, JWTPairResponse{
 			AccessToken:  string(pair.Access),
 			RefreshToken: string(pair.Refresh),
 		})
