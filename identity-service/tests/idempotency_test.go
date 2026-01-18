@@ -13,19 +13,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/karto4ki/karto4ki-backend/identity-service/restapi"
 	"github.com/karto4ki/karto4ki-backend/identity-service/services"
+	"github.com/karto4ki/karto4ki-backend/identity-service/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type mockIdempotencyStorage struct {
 	mu    sync.RWMutex
-	data  map[string]*services.CapturedResponse
+	data  map[string]*storage.CapturedResponse
 	locks map[string]string
 }
 
 func newMockIdempotencyStorage() services.IdempotencyStorage {
 	return &mockIdempotencyStorage{
-		data:  make(map[string]*services.CapturedResponse),
+		data:  make(map[string]*storage.CapturedResponse),
 		locks: make(map[string]string),
 	}
 }
@@ -56,7 +57,7 @@ func (m *mockIdempotencyStorage) ReleaseLock(_ context.Context, key, token strin
 	return &mockLockError{key: key, token: token, released: true}
 }
 
-func (m *mockIdempotencyStorage) Get(_ context.Context, key string) (*services.CapturedResponse, bool, error) {
+func (m *mockIdempotencyStorage) Get(_ context.Context, key string) (*storage.CapturedResponse, bool, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -64,7 +65,7 @@ func (m *mockIdempotencyStorage) Get(_ context.Context, key string) (*services.C
 	return resp, ok, nil
 }
 
-func (m *mockIdempotencyStorage) Store(_ context.Context, key string, resp *services.CapturedResponse) error {
+func (m *mockIdempotencyStorage) Store(_ context.Context, key string, resp *storage.CapturedResponse) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.data[key] = resp
@@ -114,13 +115,13 @@ func TestStoresResponse(t *testing.T) {
 
 func TestReturnsStored(t *testing.T) {
 	// Arrange
-	r, storage := setUp()
+	r, repo := setUp()
 	r.POST("/200", func(_ *gin.Context) {
 		assert.FailNow(t, "This code is not to re-execute")
 	})
 
 	const idempotencyKey = "2e89f9fc-5596-4a9c-8177-3b4ce3853b17"
-	cachedResp := &services.CapturedResponse{
+	cachedResp := &storage.CapturedResponse{
 		StatusCode: 200,
 		Headers: http.Header{
 			"Custom-Header": []string{"idk"},
@@ -129,7 +130,7 @@ func TestReturnsStored(t *testing.T) {
 		Body: []byte{69},
 	}
 
-	err := storage.Store(context.Background(), idempotencyKey, cachedResp)
+	err := repo.Store(context.Background(), idempotencyKey, cachedResp)
 	require.NoError(t, err)
 
 	// Act

@@ -9,9 +9,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/karto4ki/karto4ki-backend/identity-service/services"
 	"github.com/redis/go-redis/v9"
 )
+
+type CapturedResponse struct {
+	StatusCode int
+	Headers    http.Header
+	Body       []byte
+}
 
 const (
 	prefixLock = "idempotency:lock:"
@@ -78,7 +83,7 @@ func (s *RedisIdempotencyStorage) ReleaseLock(ctx context.Context, key, token st
 	return nil
 }
 
-func (s *RedisIdempotencyStorage) Get(ctx context.Context, key string) (*services.CapturedResponse, bool, error) {
+func (s *RedisIdempotencyStorage) Get(ctx context.Context, key string) (*CapturedResponse, bool, error) {
 	metaKey := prefixMeta + key
 
 	metaJSON, err := s.client.Get(ctx, metaKey).Result()
@@ -104,7 +109,7 @@ func (s *RedisIdempotencyStorage) Get(ctx context.Context, key string) (*service
 		return nil, false, fmt.Errorf("failed to get data: %w", err)
 	}
 
-	response := &services.CapturedResponse{
+	response := &CapturedResponse{
 		StatusCode: meta.StatusCode,
 		Headers:    meta.Headers,
 		Body:       data,
@@ -113,7 +118,7 @@ func (s *RedisIdempotencyStorage) Get(ctx context.Context, key string) (*service
 	return response, true, nil
 }
 
-func (s *RedisIdempotencyStorage) Store(ctx context.Context, key string, resp *services.CapturedResponse) error {
+func (s *RedisIdempotencyStorage) Store(ctx context.Context, key string, resp *CapturedResponse) error {
 	lockTokenLength := 16
 	bytes := make([]byte, lockTokenLength/2+1)
 	rand.Read(bytes)
