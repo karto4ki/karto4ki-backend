@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/karto4ki/karto4ki-backend/identity-service/restapi"
-	"github.com/karto4ki/karto4ki-backend/identity-service/services"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/restapi"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/services"
 )
 
 type SignOutService interface {

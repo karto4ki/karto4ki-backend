@@ -2,7 +2,7 @@ package services
 
 import (
 	"context"
-	"github.com/karto4ki/karto4ki-backend/identity-service/jwt"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/jwt"
 )
 
 type SignoutService struct {

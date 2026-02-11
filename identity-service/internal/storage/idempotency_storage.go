@@ -26,15 +26,10 @@ const (
 
 type RedisIdempotencyStorage struct {
 	client        *redis.Client
-	storageConfig StorageConfig
+	storageConfig time.Duration
 }
 
-type StorageConfig struct {
-	MetaTTL time.Duration
-	DataTTL time.Duration
-}
-
-func NewRedisIdempotencyStorage(client *redis.Client, config StorageConfig) *RedisIdempotencyStorage {
+func NewRedisIdempotencyStorage(client *redis.Client, config time.Duration) *RedisIdempotencyStorage {
 	return &RedisIdempotencyStorage{
 		client:        client,
 		storageConfig: config,
@@ -126,7 +121,7 @@ func (s *RedisIdempotencyStorage) Store(ctx context.Context, key string, resp *C
 
 	dataKey := prefixData + token
 
-	if err := s.client.Set(ctx, dataKey, resp.Body, s.storageConfig.DataTTL).Err(); err != nil {
+	if err := s.client.Set(ctx, dataKey, resp.Body, s.storageConfig).Err(); err != nil {
 		return fmt.Errorf("failed to store data: %w", err)
 	}
 
@@ -144,7 +139,7 @@ func (s *RedisIdempotencyStorage) Store(ctx context.Context, key string, resp *C
 	}
 
 	metaKey := prefixMeta + key
-	if err := s.client.Set(ctx, metaKey, metaJSON, s.storageConfig.MetaTTL).Err(); err != nil {
+	if err := s.client.Set(ctx, metaKey, metaJSON, s.storageConfig).Err(); err != nil {
 		s.client.Del(ctx, dataKey)
 		return fmt.Errorf("failed to store metadata: %w", err)
 	}

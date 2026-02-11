@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/karto4ki/karto4ki-backend/identity-service/jwt"
-	"github.com/karto4ki/karto4ki-backend/identity-service/storage"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/jwt"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/storage"
 )
 
 var (

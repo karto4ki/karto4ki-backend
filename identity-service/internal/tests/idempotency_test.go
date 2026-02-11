@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/karto4ki/karto4ki-backend/identity-service/restapi"
-	"github.com/karto4ki/karto4ki-backend/identity-service/services"
-	"github.com/karto4ki/karto4ki-backend/identity-service/storage"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/restapi"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/services"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

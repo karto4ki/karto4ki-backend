@@ -14,14 +14,17 @@ var (
 	ErrSignInKeyNotFound = errors.New("sign in key was not found")
 	ErrFailGetSignInKey  = errors.New("getting data failed")
 	ErrUnmarshalDataFail = errors.New("unmarshalling meta failed")
+	ErrParseUUIDFail     = errors.New("uuid parsing failed")
 )
 
 type SignInData struct {
-	SignInKey uuid.UUID
-	UserId    uuid.UUID
-	Name      string
-	Username  string
-	Code      string
+	SignInKey   uuid.UUID
+	LastRequest time.Time
+	UserId      uuid.UUID
+	Email       string
+	Name        string
+	Username    string
+	Code        string
 }
 
 type SignInStorage struct {
@@ -60,4 +63,44 @@ func (s *SignInStorage) FindKey(ctx context.Context, signInKey uuid.UUID) (*Sign
 		return nil, ErrUnmarshalDataFail
 	}
 	return meta, nil
+}
+
+func (s SignInStorage) FindKeyByEmail(ctx context.Context, email string) (*SignInData, error) {
+	emailKey := "EmailKey: " + email
+	resp := s.client.Get(ctx, emailKey)
+	if err := resp.Err(); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, ErrSignInKeyNotFound
+		}
+		return nil, ErrFailGetSignInKey
+	}
+
+	key, err := uuid.Parse(resp.Val())
+	if err != nil {
+		return nil, ErrParseUUIDFail
+	}
+	return s.FindKey(ctx, key)
+}
+
+func (s SignInStorage) Store(ctx context.Context, data *SignInData) error {
+	metaJson, err := json.Marshal(data)
+	if err != nil {
+		return ErrUnmarshalDataFail
+	}
+
+	key := data.SignInKey.String()
+	metaKey := "Sign In: " + key
+	phoneKey := "EmailKey: " + data.Email
+
+	status := s.client.Set(ctx, metaKey, metaJson, s.ttl)
+	if err := status.Err(); err != nil {
+		return err
+	}
+
+	status = s.client.Set(ctx, phoneKey, key, s.ttl)
+	if err := status.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }

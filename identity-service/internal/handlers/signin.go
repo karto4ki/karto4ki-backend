@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/karto4ki/karto4ki-backend/identity-service/jwt"
-	"github.com/karto4ki/karto4ki-backend/identity-service/restapi"
-	"github.com/karto4ki/karto4ki-backend/identity-service/services"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/jwt"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/restapi"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/services"
 )
 
 type SignInService interface {

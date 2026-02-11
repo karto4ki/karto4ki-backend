@@ -34,10 +34,10 @@ type Config struct {
 
 	Type string
 
-	publicKey  *rsa.PublicKey  // Used for asymmetric signing
-	privateKey *rsa.PrivateKey // Used for asymmetric signing
+	publicKey  *rsa.PublicKey
+	privateKey *rsa.PrivateKey
 
-	SymmetricKey []byte // Used for symmetric signing
+	SymmetricKey []byte
 }
 
 var nowFunc = func() time.Time {
@@ -127,6 +127,13 @@ func ParseWithAud(conf *Config, token Token, aud string) (jwt.MapClaims, error) 
 	}
 
 	return claims, nil
+}
+
+func (c *Config) RSAKeys(privateKey []byte) error {
+	var err error
+	c.privateKey, err = jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+	c.publicKey = &c.privateKey.PublicKey
+	return err
 }
 
 func isSymmetricMethod(method jwt.SigningMethod) bool {
