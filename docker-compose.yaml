@@ -1,0 +1,36 @@
+services:
+  identity-service:
+    build: ./identity-service
+    container_name: identity-service
+    volumes:
+      - ./identity-service/config.yml:/app/config.yml:ro
+      - ./keys:/app/keys:ro
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+    depends_on:
+      - identity-redis
+  identity-redis:
+    image: redis:latest
+    volumes:
+      - identity_redis_data:/data
+    environment:
+      - REDIS_PASSWORD=secret
+    restart: on-failure
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - identity-service
+
+volumes:
+  identity_redis_data:

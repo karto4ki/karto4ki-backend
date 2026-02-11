@@ -1,0 +1,38 @@
+access_token:
+  signing_method: HS512
+  lifetime: 5m
+  issuer: identity_service
+  audience: 
+    - client
+  key_file_path: /app/keys/sym
+refresh_token:
+  signing_method: HS512
+  lifetime: 720h 
+  issuer: identity_service
+  audience: 
+    - client
+  key_file_path: /app/keys/sym
+internal_token:
+  signing_method: RS256
+  lifetime: 1m
+  issuer: identity_service
+  audience: 
+    - identity_service
+  key_file_path: /app/keys/rsa
+invalidated_token_storage:
+  exp: 4m 
+userservice:
+  grpc_addr: user-service:50051
+redis:
+  addr: identity-redis:6379
+  password: secret
+  db: 0
+signin_meta:
+  lifetime: 2m
+idempotency:
+  data_exp: 10m
+  lock_ttl: 30s
+email_code:
+  send_frequency: 1m
+grpc_service:
+  port: 9090
