@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/karto4ki/karto4ki-backend/identity-service/restapi"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/restapi"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/storage"
 )
 
 const (
@@ -17,15 +18,9 @@ const (
 	ErrRequestInProgress     = "request in progress"
 )
 
-type CapturedResponse struct {
-	StatusCode int
-	Headers    http.Header
-	Body       []byte
-}
-
 type IdempotencyStorage interface {
-	Get(ctx context.Context, key string) (*CapturedResponse, bool, error)
-	Store(ctx context.Context, key string, resp *CapturedResponse) error
+	Get(ctx context.Context, key string) (*storage.CapturedResponse, bool, error)
+	Store(ctx context.Context, key string, resp *storage.CapturedResponse) error
 
 	AcquireLock(ctx context.Context, key string, ttl time.Duration) (string, error)
 	ReleaseLock(ctx context.Context, key, token string) error
@@ -97,7 +92,7 @@ func (m *idempotencyMiddleware) Handle(c *gin.Context) {
 	c.Writer = capturer
 	c.Next()
 
-	resp := &CapturedResponse{
+	resp := &storage.CapturedResponse{
 		StatusCode: capturer.status,
 		Headers:    capturer.Header().Clone(),
 		Body:       capturer.body.Bytes(),
@@ -118,7 +113,7 @@ func (r *responseCapturer) WriteHeader(statusCode int) {
 	r.ResponseWriter.WriteHeader(statusCode)
 }
 
-func (m *idempotencyMiddleware) storeResponseWithRetry(ctx context.Context, key string, resp *CapturedResponse) {
+func (m *idempotencyMiddleware) storeResponseWithRetry(ctx context.Context, key string, resp *storage.CapturedResponse) {
 	var err error
 
 	for i := 0; i < m.config.RetryCount; i++ {
@@ -136,7 +131,7 @@ func (m *idempotencyMiddleware) storeResponseWithRetry(ctx context.Context, key 
 	}
 }
 
-func (m *idempotencyMiddleware) writeCachedResponse(c *gin.Context, cached *CapturedResponse) {
+func (m *idempotencyMiddleware) writeCachedResponse(c *gin.Context, cached *storage.CapturedResponse) {
 	for key, values := range cached.Headers {
 		for _, value := range values {
 			c.Writer.Header().Add(key, value)

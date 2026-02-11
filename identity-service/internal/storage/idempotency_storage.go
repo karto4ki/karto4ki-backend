@@ -9,9 +9,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/karto4ki/karto4ki-backend/identity-service/services"
 	"github.com/redis/go-redis/v9"
 )
+
+type CapturedResponse struct {
+	StatusCode int
+	Headers    http.Header
+	Body       []byte
+}
 
 const (
 	prefixLock = "idempotency:lock:"
@@ -21,15 +26,10 @@ const (
 
 type RedisIdempotencyStorage struct {
 	client        *redis.Client
-	storageConfig StorageConfig
+	storageConfig time.Duration
 }
 
-type StorageConfig struct {
-	MetaTTL time.Duration
-	DataTTL time.Duration
-}
-
-func NewRedisIdempotencyStorage(client *redis.Client, config StorageConfig) *RedisIdempotencyStorage {
+func NewRedisIdempotencyStorage(client *redis.Client, config time.Duration) *RedisIdempotencyStorage {
 	return &RedisIdempotencyStorage{
 		client:        client,
 		storageConfig: config,
@@ -78,7 +78,7 @@ func (s *RedisIdempotencyStorage) ReleaseLock(ctx context.Context, key, token st
 	return nil
 }
 
-func (s *RedisIdempotencyStorage) Get(ctx context.Context, key string) (*services.CapturedResponse, bool, error) {
+func (s *RedisIdempotencyStorage) Get(ctx context.Context, key string) (*CapturedResponse, bool, error) {
 	metaKey := prefixMeta + key
 
 	metaJSON, err := s.client.Get(ctx, metaKey).Result()
@@ -104,7 +104,7 @@ func (s *RedisIdempotencyStorage) Get(ctx context.Context, key string) (*service
 		return nil, false, fmt.Errorf("failed to get data: %w", err)
 	}
 
-	response := &services.CapturedResponse{
+	response := &CapturedResponse{
 		StatusCode: meta.StatusCode,
 		Headers:    meta.Headers,
 		Body:       data,
@@ -113,7 +113,7 @@ func (s *RedisIdempotencyStorage) Get(ctx context.Context, key string) (*service
 	return response, true, nil
 }
 
-func (s *RedisIdempotencyStorage) Store(ctx context.Context, key string, resp *services.CapturedResponse) error {
+func (s *RedisIdempotencyStorage) Store(ctx context.Context, key string, resp *CapturedResponse) error {
 	lockTokenLength := 16
 	bytes := make([]byte, lockTokenLength/2+1)
 	rand.Read(bytes)
@@ -121,7 +121,7 @@ func (s *RedisIdempotencyStorage) Store(ctx context.Context, key string, resp *s
 
 	dataKey := prefixData + token
 
-	if err := s.client.Set(ctx, dataKey, resp.Body, s.storageConfig.DataTTL).Err(); err != nil {
+	if err := s.client.Set(ctx, dataKey, resp.Body, s.storageConfig).Err(); err != nil {
 		return fmt.Errorf("failed to store data: %w", err)
 	}
 
@@ -139,7 +139,7 @@ func (s *RedisIdempotencyStorage) Store(ctx context.Context, key string, resp *s
 	}
 
 	metaKey := prefixMeta + key
-	if err := s.client.Set(ctx, metaKey, metaJSON, s.storageConfig.MetaTTL).Err(); err != nil {
+	if err := s.client.Set(ctx, metaKey, metaJSON, s.storageConfig).Err(); err != nil {
 		s.client.Del(ctx, dataKey)
 		return fmt.Errorf("failed to store metadata: %w", err)
 	}

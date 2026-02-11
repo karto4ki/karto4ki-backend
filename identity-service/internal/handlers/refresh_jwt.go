@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/karto4ki/karto4ki-backend/identity-service/jwt"
-	"github.com/karto4ki/karto4ki-backend/identity-service/restapi"
-	"github.com/karto4ki/karto4ki-backend/identity-service/services"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/jwt"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/restapi"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/services"
 )
 
 type RefreshJWTService interface {
@@ -18,7 +18,7 @@ type refreshJWTRequest struct {
 	RefreshToken string `json: "refresh_token"`
 }
 
-type refreshJWTResponse struct {
+type JWTPairResponse struct {
 	AccessToken  string `json: "access_token"`
 	RefreshToken string `json: "refresh_token"`
 }
@@ -58,7 +58,7 @@ func RefreshJWT(service RefreshJWTService) gin.HandlerFunc {
 				restapi.SendInternalError(c)
 			}
 		}
-		restapi.SendSuccess(c, refreshJWTResponse{
+		restapi.SendSuccess(c, JWTPairResponse{
 			AccessToken:  string(pair.Access),
 			RefreshToken: string(pair.Refresh),
 		})

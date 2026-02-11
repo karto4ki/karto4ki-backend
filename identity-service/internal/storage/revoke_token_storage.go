@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/karto4ki/karto4ki-backend/identity-service/jwt"
+	"github.com/karto4ki/karto4ki-backend/identity-service/internal/jwt"
 	"github.com/redis/go-redis/v9"
 )
 
