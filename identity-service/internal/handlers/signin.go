@@ -16,11 +16,8 @@ type SignInService interface {
 }
 
 type SignInRequest struct {
-	SignInKey uuid.UUID `json:"signin_key", binding:"required"`
-	Code      string    `json:"code"`
-}
-
-type SignInResponse struct {
+	SignInKey uuid.UUID `json:"signin_key" binding:"required"`
+	Code      string    `json:"code" binding:"required"`
 }
 
 func SignIn(service SignInService) gin.HandlerFunc {
@@ -34,15 +31,16 @@ func SignIn(service SignInService) gin.HandlerFunc {
 			restapi.SendValidationError(c, []restapi.ErrorDetail{
 				{
 					Field:   "signin_key",
-					Message: "shouldn't be nil",
+					Message: "should not be nil",
 				},
 			})
+			return
 		}
 
 		pair, err := service.SignIn(c.Request.Context(), req.SignInKey, req.Code)
 		if err != nil {
 			switch err {
-			case services.ErrSignInKeyNotFound:
+			case services.ErrAuthKeyNotFound:
 				c.JSON(http.StatusNotFound, restapi.ErrorResponse{
 					ErrorType:    restapi.ErrTypeSignInKeyNotFound,
 					ErrorMessage: "Sign in key was not found",

@@ -15,12 +15,12 @@ type RefreshJWTService interface {
 }
 
 type refreshJWTRequest struct {
-	RefreshToken string `json: "refresh_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type JWTPairResponse struct {
-	AccessToken  string `json: "access_token"`
-	RefreshToken string `json: "refresh_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func RefreshJWT(service RefreshJWTService) gin.HandlerFunc {
@@ -38,24 +38,29 @@ func RefreshJWT(service RefreshJWTService) gin.HandlerFunc {
 					ErrorType:    restapi.ErrTypeRefreshTokenExpired,
 					ErrorMessage: "Refresh token expired",
 				})
+				return
 			case services.ErrRefreshTokenInvalidated:
 				c.JSON(http.StatusBadRequest, restapi.ErrorResponse{
 					ErrorType:    restapi.ErrTypeRefreshTokenInvalidated,
 					ErrorMessage: "Refresh token invalidated",
 				})
+				return
 			case services.ErrInvalidJWT:
 				c.JSON(http.StatusBadRequest, restapi.ErrorResponse{
 					ErrorType:    restapi.ErrTypeInvalidJWT,
 					ErrorMessage: "Invalid signature of jwt",
 				})
+				return
 			case services.ErrInvalidTokenType:
 				c.JSON(http.StatusBadRequest, restapi.ErrorResponse{
 					ErrorType:    restapi.ErrTypeInvalidTokenType,
 					ErrorMessage: "Invalid jwt token type",
 				})
+				return
 			default:
 				c.Error(err)
 				restapi.SendInternalError(c)
+				return
 			}
 		}
 		restapi.SendSuccess(c, JWTPairResponse{
