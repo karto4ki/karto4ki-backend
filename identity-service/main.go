@@ -71,6 +71,15 @@ type Config struct {
 		Email  string `mapstructure:"email"`
 		ApiKey string `mapstructure:"api_key"`
 	} `mapstructure:"email"`
+
+	OAuth struct {
+		GoogleClientID string `mapstructure:"google_client_id"`
+		AppleClientID  string `mapstructure:"apple_client_id"`
+	} `mapstructure:"oauth"`
+
+	SignUp struct {
+		CodeTTL time.Duration `mapstructure:"code_ttl"`
+	} `mapstructure:"signup"`
 }
 
 func loadConfig(file string) *Config {
@@ -110,13 +119,17 @@ func main() {
 	internalTokenConfig := loadInternalTokenConfig()
 
 	idempotencyStorage := createIdempotencyStorage(rdb)
-	signInMetaStorage := createSignInMetaStorage(rdb)
+	authMetaStorage := createAuthMetaStorage(rdb)
 	invalidatedTokenStorage := createInvalidatedTokenStorage(rdb)
 
-	sendCodeService := createSignInSendCodeService(email, *signInMetaStorage, usersClient)
-	signInService := services.NewSignInService(signInMetaStorage, accessTokenConfig, refreshTokenConfig)
+	sendCodeService := createSendCodeService(email, *authMetaStorage, usersClient)
+	verifyCodeService := createVerifyCodeService(*authMetaStorage)
+	signInService := services.NewSignInService(authMetaStorage, accessTokenConfig, refreshTokenConfig)
 	refreshService := services.NewRefreshJWTService(accessTokenConfig, refreshTokenConfig, invalidatedTokenStorage)
 	signOutService := services.NewSignOutService(refreshTokenConfig, invalidatedTokenStorage)
+	signUpService := services.NewSignUpService(authMetaStorage, usersClient, accessTokenConfig, refreshTokenConfig)
+	googleAuthService := services.NewGoogleAuthService(accessTokenConfig, refreshTokenConfig, usersClient, conf.OAuth.GoogleClientID)
+	appleAuthService := services.NewAppleAuthService(accessTokenConfig, refreshTokenConfig, usersClient, conf.OAuth.AppleClientID)
 	identityService := services.NewAuthService(accessTokenConfig, internalTokenConfig)
 	idempotencyConf := services.MiddlewareConfig{
 		Storage:    idempotencyStorage,
@@ -154,9 +167,12 @@ func main() {
 		Use(services.NewMiddleware(idempotencyConf)).
 		POST("/signin/send-email-code", handlers.SignInSendCode(sendCodeService)).
 		POST("/signin", handlers.SignIn(signInService)).
-		POST("/refresh-token", handlers.RefreshJWT(refreshService))
-
-	r.PUT("/v1.0/sign-out", handlers.SignOut(signOutService))
+		POST("/refresh-token", handlers.RefreshJWT(refreshService)).
+		POST("/signin/oath/google", handlers.GoogleAuth(googleAuthService)).
+		POST("/signin/oath/apple", handlers.AppleAuth(appleAuthService)).
+		POST("/signup", handlers.SignUp(signUpService)).
+		POST("/verify-code", handlers.VerifyCode(verifyCodeService))
+	r.PUT("/sign-out", handlers.SignOut(signOutService))
 	r.GET("/v1.0/identity", handlers.NewIdentityHandler(identityService))
 
 	r.Run(":5000")
@@ -186,6 +202,11 @@ func createEmailSender() email.EmailSender {
 func createInvalidatedTokenStorage(redisClient *redis.Client) *storage.RevokeStorage {
 	conf := conf.InvalidatedTokenStorage.Exp
 	return storage.NewRevokeStorage(redisClient, conf)
+}
+
+func createSignUpStorage(redisClient *redis.Client) *storage.AuthStorage {
+	conf := conf.SignUp.CodeTTL
+	return storage.NewAuthStorage(redisClient, conf)
 }
 
 func loadAccessTokenConfig() *jwt.Config {
@@ -244,9 +265,9 @@ func connectRedis() *redis.Client {
 	return client
 }
 
-func createSignInMetaStorage(redisClient *redis.Client) *storage.SignInStorage {
+func createAuthMetaStorage(redisClient *redis.Client) *storage.AuthStorage {
 	config := conf.SignInMeta.Lifetime
-	return storage.NewSignInStorage(redisClient, config)
+	return storage.NewAuthStorage(redisClient, config)
 }
 
 func createIdempotencyStorage(redisClient *redis.Client) services.IdempotencyStorage {
@@ -254,10 +275,14 @@ func createIdempotencyStorage(redisClient *redis.Client) services.IdempotencySto
 	return storage.NewRedisIdempotencyStorage(redisClient, idempotencyConf)
 }
 
-func createSignInSendCodeService(email email.EmailSender, storage storage.SignInStorage,
-	users userservice.UserServiceClient) *services.SignInSendCodeService {
+func createSendCodeService(email email.EmailSender, storage storage.AuthStorage,
+	users userservice.UserServiceClient) *services.SendCodeService {
 	config := conf.EmailCode.SendFrequency
-	return services.NewSignInSendCodeService(&config, storage, email, users)
+	return services.NewSendCodeService(&config, storage, email, users)
+}
+
+func createVerifyCodeService(storage storage.AuthStorage) *services.AuthVerifyService {
+	return services.NewAuthVerifyService(&storage)
 }
 
 func readKey(path string) []byte {
