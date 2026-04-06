@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,10 +17,11 @@ type SendCodeRequest struct {
 
 type SendCodeResponse struct {
 	SignInKey uuid.UUID `json:"signin_key"`
+	IsExisted bool      `json:"is_existed"`
 }
 
 type SigninSendCodeService interface {
-	SignInSendCode(ctx context.Context, email string) (signinKey uuid.UUID, err error)
+	SignInSendCode(ctx context.Context, email string) (signinKey uuid.UUID, isExist bool, err error)
 }
 
 func SignInSendCode(service SigninSendCodeService) gin.HandlerFunc {
@@ -30,33 +32,32 @@ func SignInSendCode(service SigninSendCodeService) gin.HandlerFunc {
 			return
 		}
 
-		signInKey, err := service.SignInSendCode(c.Request.Context(), req.Email)
+		signInKey, isExist, err := service.SignInSendCode(c.Request.Context(), req.Email)
 
 		if err != nil {
 			switch err {
-			case services.ErrUserNotFound:
-				c.JSON(http.StatusNotFound, restapi.ErrorResponse{
-					ErrorType:    restapi.ErrTypeUserNotFound,
-					ErrorMessage: "Such user doesn't exist",
-				})
 			case services.ErrSendCodeFreqExceeded:
 				c.JSON(http.StatusBadRequest, restapi.ErrorResponse{
 					ErrorType:    restapi.ErrTypeSendCodeFreqExceeded,
 					ErrorMessage: "Send code operation frequency exceeded",
 				})
+				return
 			case services.ErrFindSignInMetaFail:
 				c.JSON(http.StatusBadRequest, restapi.ErrorResponse{
 					ErrorType: restapi.ErrTypeSignInMetaFail,
 				})
+				return
 			default:
+				log.Printf("default: %s", err)
 				c.Error(err)
 				restapi.SendInternalError(c)
+				return
 			}
-			return
 		}
 
 		restapi.SendSuccess(c, SendCodeResponse{
 			SignInKey: signInKey,
+			IsExisted: isExist,
 		})
 	}
 }
