@@ -6,20 +6,27 @@ services:
       - ./identity-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
     environment:
-      - REDIS_URL=redis://redis:6379
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM}
+      - USER_SERVICE_ADDR=user-service-mock:50051
     depends_on:
       - identity-redis
+      - mock-userservice
   identity-redis:
     image: redis:latest
     volumes:
       - identity_redis_data:/data
-    environment:
-      - REDIS_PASSWORD=secret
     restart: on-failure
+  
+  mock-userservice:
+    build:
+      context: ./mock-userservice
+      dockerfile: Dockerfile.mock
+    container_name: mock-userservice
+    ports:
+      - "50051:50051"
 
   nginx:
     image: nginx:latest

@@ -1,0 +1,28 @@
+# Этап сборки
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Копируем go.mod и go.sum (если они есть, иначе можно пропустить)
+COPY go.mod go.sum* ./
+RUN go mod download 2>/dev/null || true
+
+# Копируем исходный код
+COPY . .
+
+# Собираем бинарник
+RUN go build -o mock-user-service ./main.go
+
+# Финальный образ
+FROM alpine:latest
+
+WORKDIR /root/
+
+# Копируем скомпилированный бинарник из этапа сборки
+COPY --from=builder /app/mock-user-service .
+
+# Открываем порт gRPC (по умолчанию 50051)
+EXPOSE 50051
+
+# Запускаем сервис
+CMD ["./mock-user-service"]
