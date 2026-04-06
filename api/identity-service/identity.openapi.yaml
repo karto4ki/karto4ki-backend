@@ -11,19 +11,18 @@ tags:
   - name: signup
     description: Sign Up user
 paths:
-  /signin/send-email-code:
+  /send-email-code:
     post:
-      summary: Sign In user
+      summary: Send email code
       description: | 
-        Sign In user
+        Verify email
         Possible `error_type` values:
         - `invalid_json`
         - `validation_failed`
-        - `user_not_found`
         - `send_code_freq_exceeded`
         - `internal`
       tags:
-        - sign in/out
+        - verify email
       parameters:
         - name: Idempotency-Key
           in: header
@@ -518,8 +517,13 @@ components:
           type: string
           format: uuid
           nullable: false
+        is_existed:
+          description: Reveal should we create new user via sign up or sign in
+          type: boolean
+          nullable: false
       required:
         - signin_key
+        - is_existed
     SignInResponse:
       type: object
       properties:

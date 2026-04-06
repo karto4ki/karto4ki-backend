@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/karto4ki/karto4ki-backend/identity-service/internal/restapi"
 	"github.com/karto4ki/karto4ki-backend/identity-service/internal/storage"
 )
@@ -57,7 +58,10 @@ func (m *idempotencyMiddleware) Handle(c *gin.Context) {
 		m.sendErrorResponse(c, http.StatusBadRequest, ErrIdempotencyKeyMissing, "No \""+HeaderIdempotencyKey+"\"header provided")
 		return
 	}
-
+	if _, err := uuid.Parse(key); err != nil {
+		m.sendErrorResponse(c, http.StatusBadRequest, ErrInvalidIdempotencyKey, "Idempotency key must be a valid UUID")
+		return
+	}
 	if len(key) > 255 {
 		m.sendErrorResponse(c, http.StatusBadRequest, ErrInvalidIdempotencyKey, "idempotency key is too long")
 		return
@@ -68,8 +72,11 @@ func (m *idempotencyMiddleware) Handle(c *gin.Context) {
 		m.sendErrorResponse(c, http.StatusConflict, ErrRequestInProgress, "Another request with same idempotency key is being processed")
 		return
 	}
-	defer m.config.Storage.ReleaseLock(c.Request.Context(), key, lockToken)
-
+	defer func() {
+		if lockToken != "" {
+			m.config.Storage.ReleaseLock(c.Request.Context(), key, lockToken)
+		}
+	}()
 	cached, ok, err := m.config.Storage.Get(c.Request.Context(), key)
 	if err != nil {
 		m.sendErrorResponse(c, http.StatusInternalServerError, restapi.ErrTypeInternal, "Failed to check cached response")

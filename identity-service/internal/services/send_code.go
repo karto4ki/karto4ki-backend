@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,20 +25,20 @@ var (
 	ErrSendEmailFail        = errors.New("send email message error")
 )
 
-type SignInSendCodeRepository interface {
-	FindKeyByEmail(ctx context.Context, email string) (*storage.SignInData, error)
-	Store(ctx context.Context, data *storage.SignInData) error
+type SendCodeRepository interface {
+	FindKeyByEmail(ctx context.Context, email string) (*storage.AuthData, error)
+	Store(ctx context.Context, data *storage.AuthData) error
 }
 
-type SignInSendCodeService struct {
+type SendCodeService struct {
 	ttl         *time.Duration
 	emailSender email.EmailSender
-	repository  SignInSendCodeRepository
+	repository  SendCodeRepository
 	userService userservice.UserServiceClient
 }
 
-func NewSignInSendCodeService(ttl *time.Duration, repository SignInSendCodeRepository, email email.EmailSender, userservice userservice.UserServiceClient) *SignInSendCodeService {
-	return &SignInSendCodeService{
+func NewSendCodeService(ttl *time.Duration, repository SendCodeRepository, email email.EmailSender, userservice userservice.UserServiceClient) *SendCodeService {
+	return &SendCodeService{
 		ttl:         ttl,
 		emailSender: email,
 		repository:  repository,
@@ -45,37 +46,65 @@ func NewSignInSendCodeService(ttl *time.Duration, repository SignInSendCodeRepos
 	}
 }
 
-func (s *SignInSendCodeService) SignInSendCode(ctx context.Context, email string) (uuid.UUID, error) {
+func (s *SendCodeService) SignInSendCode(ctx context.Context, email string) (uuid.UUID, bool, error) {
 	data, err := s.repository.FindKeyByEmail(ctx, email)
-	if err != nil {
-		return uuid.Nil, ErrFindSignInMetaFail
+	if err != nil && !errors.Is(err, storage.ErrAuthKeyNotFound) {
+		log.Printf("SignInSendCode: %s", err)
+		return uuid.Nil, false, ErrFindSignInMetaFail
 	}
+	log.Printf("not in err")
 	if data != nil && data.LastRequest.Add(*s.ttl).Compare(time.Now().UTC()) > 0 {
-		return uuid.Nil, ErrSendCodeFreqExceeded
+		isExist := data.UserId != uuid.Nil
+		return uuid.Nil, isExist, ErrSendCodeFreqExceeded
 	}
 
-	var user *userservice.GetUserResponse
-	if user, err = s.fetchUser(ctx, email); err != nil {
-		return uuid.Nil, err
+	var userID uuid.UUID
+	var username, name string
+	var isExist bool
+
+	userResp, err := s.userService.GetUserByEmail(ctx, &userservice.GetUserByEmailRequest{Email: email})
+	if err != nil {
+		log.Printf("get user by email fail: %s", err)
+		return uuid.Nil, false, ErrGrpcFindMeta
 	}
-	meta := storage.SignInData{
-		SignInKey:   uuid.New(),
+	switch userResp.Status {
+	case userservice.GetUserResponseStatus_SUCCESS:
+		isExist = true
+		if userResp.UserId != nil {
+			userID = uuid.MustParse(userResp.UserId.GetValue())
+		}
+		if userResp.Username != nil {
+			username = *userResp.Username
+		}
+		if userResp.Name != nil {
+			name = *userResp.Name
+		}
+	case userservice.GetUserResponseStatus_NOT_FOUND:
+		isExist = false
+	default:
+		return uuid.Nil, false, ErrUnexpectedStatus
+	}
+
+	meta := storage.AuthData{
+		AuthKey:     uuid.New(),
 		LastRequest: time.Now().UTC(),
 		Email:       email,
-		UserId:      uuid.MustParse(user.UserId.GetValue()),
-		Username:    *user.Username,
-		Name:        *user.Name,
+		UserId:      userID,
+		Username:    username,
+		Name:        name,
 		Code:        genCode(),
 	}
-	message := "Do not tell this code to anybody. Your code for karto4ki signing in is " + meta.Code
-	if err := s.emailSender.SendEmail(ctx, email, message); err != nil {
-		return uuid.Nil, ErrSendEmailFail
-	}
+
 	if err := s.repository.Store(ctx, &meta); err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, isExist, err
 	}
 
-	return meta.SignInKey, err
+	message := "Do not tell this code to anybody. Your code for karto4ki signing in is " + meta.Code
+	if err := s.emailSender.SendEmail(ctx, email, message); err != nil {
+		return uuid.Nil, isExist, ErrSendEmailFail
+	}
+
+	return meta.AuthKey, isExist, nil
 }
 
 func genCode() string {
@@ -87,13 +116,13 @@ func genCode() string {
 	return fmt.Sprintf("%06d", n)
 }
 
-func (s *SignInSendCodeService) fetchUser(ctx context.Context, email string) (*userservice.GetUserResponse, error) {
+func (s *SendCodeService) fetchUser(ctx context.Context, email string) (*userservice.GetUserResponse, error) {
 	user, err := s.userService.GetUserByEmail(ctx, &userservice.GetUserByEmailRequest{
 		Email: email,
 	})
 
 	if err != nil {
-		return nil, ErrGrpcFindMeta
+		return nil, err
 	}
 	if user.Status != userservice.GetUserResponseStatus_SUCCESS {
 		if user.Status == userservice.GetUserResponseStatus_FAILED {

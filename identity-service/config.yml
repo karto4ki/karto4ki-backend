@@ -20,15 +20,20 @@ internal_token:
     - identity_service
   key_file_path: /app/keys/rsa
 invalidated_token_storage:
-  exp: 4m 
+  exp: 720h 
 userservice:
-  grpc_addr: user-service:50051
+  grpc_addr: mock-userservice:50051
 redis:
   addr: identity-redis:6379
   password: secret
   db: 0
 signin_meta:
   lifetime: 2m
+signup:
+  code_ttl: 5m
+oauth:
+  google_client_id: ""
+  apple_client_id: ""
 idempotency:
   data_exp: 10m
   lock_ttl: 30s

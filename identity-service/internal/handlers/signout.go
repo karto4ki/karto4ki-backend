@@ -14,7 +14,7 @@ type SignOutService interface {
 }
 
 type SignOutRequest struct {
-	refreshToken string `json:"refresh_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type SignOutResponse struct {
@@ -25,18 +25,21 @@ func SignOut(service SignOutService) gin.HandlerFunc {
 		var req SignOutRequest
 		if err := c.ShouldBindBodyWithJSON(&req); err != nil {
 			restapi.SendUnprocessableJSON(c)
+			return
 		}
 
-		err := service.SignOut(c.Request.Context(), req.refreshToken)
+		err := service.SignOut(c.Request.Context(), req.RefreshToken)
 		if err != nil && err != services.ErrRefreshTokenExpired {
 			if err == services.ErrInvalidJWT {
 				c.JSON(http.StatusBadRequest, restapi.ErrorResponse{
 					ErrorType:    restapi.ErrTypeInvalidJWT,
 					ErrorMessage: "Refresh token is invalid",
 				})
+				return
 			}
 			c.Error(err)
 			restapi.SendInternalError(c)
+			return
 		}
 
 		restapi.SendSuccess(c, SignOutResponse{})

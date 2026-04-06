@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,85 +12,90 @@ import (
 )
 
 var (
-	ErrSignInKeyNotFound = errors.New("sign in key was not found")
-	ErrFailGetSignInKey  = errors.New("getting data failed")
+	ErrAuthKeyNotFound   = errors.New("auth key was not found")
+	ErrFailGetAuthKey    = errors.New("getting data failed")
 	ErrUnmarshalDataFail = errors.New("unmarshalling meta failed")
 	ErrParseUUIDFail     = errors.New("uuid parsing failed")
 )
 
-type SignInData struct {
-	SignInKey   uuid.UUID
+type AuthData struct {
+	AuthKey     uuid.UUID
 	LastRequest time.Time
 	UserId      uuid.UUID
 	Email       string
 	Name        string
 	Username    string
 	Code        string
+	Verified    bool
 }
 
-type SignInStorage struct {
+type AuthStorage struct {
 	client *redis.Client
 	ttl    time.Duration
 }
 
-func NewSignInStorage(client *redis.Client, ttl time.Duration) *SignInStorage {
-	return &SignInStorage{
+func NewAuthStorage(client *redis.Client, ttl time.Duration) *AuthStorage {
+	return &AuthStorage{
 		client: client,
 		ttl:    ttl,
 	}
 }
 
-func (s *SignInStorage) Remove(ctx context.Context, signInKey uuid.UUID) error {
-	key := "Sign In: " + signInKey.String()
-	res := s.client.Del(ctx, key)
+func (s *AuthStorage) Remove(ctx context.Context, key uuid.UUID) error {
+	keyStr := "Auth: " + key.String()
+	res := s.client.Del(ctx, keyStr)
 	if err := res.Err(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *SignInStorage) FindKey(ctx context.Context, signInKey uuid.UUID) (*SignInData, error) {
-	key := "Sign In: " + signInKey.String()
+func (s *AuthStorage) FindKey(ctx context.Context, authKey uuid.UUID) (*AuthData, error) {
+	key := "Auth: " + authKey.String()
 	res := s.client.Get(ctx, key)
 	if err := res.Err(); err != nil {
 		if errors.Is(err, redis.Nil) {
-			return nil, ErrSignInKeyNotFound
+			return nil, ErrAuthKeyNotFound
 		}
-		return nil, ErrFailGetSignInKey
+		return nil, ErrFailGetAuthKey
 	}
 
-	meta := new(SignInData)
+	meta := new(AuthData)
 	if err := json.Unmarshal([]byte(res.Val()), meta); err != nil {
 		return nil, ErrUnmarshalDataFail
 	}
 	return meta, nil
 }
 
-func (s SignInStorage) FindKeyByEmail(ctx context.Context, email string) (*SignInData, error) {
+func (s AuthStorage) FindKeyByEmail(ctx context.Context, email string) (*AuthData, error) {
 	emailKey := "EmailKey: " + email
 	resp := s.client.Get(ctx, emailKey)
+	log.Printf("findkey start")
 	if err := resp.Err(); err != nil {
 		if errors.Is(err, redis.Nil) {
-			return nil, ErrSignInKeyNotFound
+			log.Printf("redis nil")
+			return nil, ErrAuthKeyNotFound
 		}
-		return nil, ErrFailGetSignInKey
+		log.Printf("FindKeyByEmail: %s", err)
+		return nil, ErrFailGetAuthKey
 	}
 
 	key, err := uuid.Parse(resp.Val())
 	if err != nil {
+		log.Printf("after parse: %s", err)
 		return nil, ErrParseUUIDFail
 	}
 	return s.FindKey(ctx, key)
 }
 
-func (s SignInStorage) Store(ctx context.Context, data *SignInData) error {
+func (s AuthStorage) Store(ctx context.Context, data *AuthData) error {
 	metaJson, err := json.Marshal(data)
 	if err != nil {
 		return ErrUnmarshalDataFail
 	}
 
-	key := data.SignInKey.String()
-	metaKey := "Sign In: " + key
+	key := data.AuthKey.String()
+	metaKey := "Auth: " + key
 	phoneKey := "EmailKey: " + data.Email
 
 	status := s.client.Set(ctx, metaKey, metaJson, s.ttl)

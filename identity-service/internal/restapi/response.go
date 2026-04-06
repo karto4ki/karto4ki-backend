@@ -29,6 +29,8 @@ const (
 	ErrTypeUsernameAlreadyExists = "username_already_exists"
 	ErrTypePhoneNotVerified      = "phone_not_verified"
 	ErrTypeSignInMetaFail        = "sign_meta_fail"
+	ErrTypeInvalidGoogleToken    = "invalid_google_token"
+	ErrTypeInvalidAppleToken     = "invalid_apple_token"
 )
 
 type ErrorDetail struct {

@@ -250,20 +250,16 @@ func TestDuplicateRequestReturnsCached(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"count": callCount})
 	})
 
-	const idempotencyKey = "duplicate-test-key"
+	const idempotencyKey = "550e8400-e29b-41d4-a716-446655440000"
 
 	resp1 := execute(r, "/duplicate-test", idempotencyKey)
-
 	time.Sleep(50 * time.Millisecond)
-
 	resp2 := execute(r, "/duplicate-test", idempotencyKey)
 
 	assert.Equal(t, resp1.Code, resp2.Code)
 	assert.Equal(t, resp1.Body.String(), resp2.Body.String())
-
 	assert.Equal(t, 1, callCount)
 }
-
 func TestLockConflict(t *testing.T) {
 	storage := newMockIdempotencyStorage()
 
