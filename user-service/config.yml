@@ -1,0 +1,19 @@
+db:
+  host: user-db
+  port: 5432
+  user: user
+  password: password
+  dbname: userdb
+  sslmode: disable
+
+jwt:
+  signing_method: HS512
+  lifetime: 3m
+  issuer: identity_service
+  audience: 
+    - user_service
+  key_file_path: /app/keys/rsa.pub
+
+
+http_port: 8080
+grpc_port: 50051

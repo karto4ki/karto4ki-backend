@@ -135,7 +135,28 @@ func (c *Config) RSAKeys(privateKey []byte) error {
 	c.publicKey = &c.privateKey.PublicKey
 	return err
 }
+func (c *Config) RSAPublicOnlyKey(key []byte) error {
+	var err error
+	c.publicKey, err = jwt.ParseRSAPublicKeyFromPEM(key)
+	return err
+}
 
 func isSymmetricMethod(method jwt.SigningMethod) bool {
 	return strings.HasPrefix(method.Alg(), "HS")
+}
+
+func ValidateAccessToken(tokenString string, secret []byte) (string, error) {
+	config := &Config{
+		SigningMethod: "HS512",
+		SymmetricKey:  secret,
+	}
+	claims, err := Parse(config, Token(tokenString))
+	if err != nil {
+		return "", err
+	}
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		return "", ErrInvalidToken
+	}
+	return sub, nil
 }

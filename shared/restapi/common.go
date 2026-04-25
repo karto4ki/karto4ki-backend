@@ -27,6 +27,13 @@ func SendValidationError(c *gin.Context, errors []ErrorDetail) {
 	})
 }
 
+func SendUnautorized(c *gin.Context) {
+	c.JSON(http.StatusUnauthorized, ErrorResponse{
+		ErrorType:    ErrTypeUnautorized,
+		ErrorMessage: "Unauthorized",
+	})
+}
+
 func SendInternalError(c *gin.Context) {
 	errResp := ErrorResponse{
 		ErrorType:    ErrTypeInternal,

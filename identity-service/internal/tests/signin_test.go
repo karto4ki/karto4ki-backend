@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/karto4ki/karto4ki-backend/identity-service/internal/jwt"
+	"github.com/karto4ki/karto4ki-backend/shared/jwt"
 	"github.com/karto4ki/karto4ki-backend/identity-service/internal/services"
 	"github.com/karto4ki/karto4ki-backend/identity-service/internal/storage"
 	"github.com/stretchr/testify/assert"

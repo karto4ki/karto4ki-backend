@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/karto4ki/karto4ki-backend/identity-service/internal/restapi"
 	"github.com/karto4ki/karto4ki-backend/identity-service/internal/storage"
+	"github.com/karto4ki/karto4ki-backend/shared/restapi"
 )
 
 const (

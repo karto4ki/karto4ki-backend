@@ -1,6 +1,8 @@
 services:
   identity-service:
-    build: ./identity-service
+    build:
+      context: .
+      dockerfile: identity-service/Dockerfile
     container_name: identity-service
     volumes:
       - ./identity-service/config.yml:/app/config.yml:ro
@@ -10,26 +12,83 @@ services:
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM}
-      - USER_SERVICE_ADDR=user-service-mock:50051
+      - USER_SERVICE_ADDR=userservice:50051
     depends_on:
       - identity-redis
-      - mock-userservice
+      - userservice
+    restart: on-failure
+
   identity-redis:
     image: redis:latest
+    container_name: identity-redis
     volumes:
       - identity_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: on-failure
-  
-  mock-userservice:
-    build:
-      context: ./mock-userservice
-      dockerfile: Dockerfile.mock
-    container_name: mock-userservice
-    ports:
-      - "50051:50051"
+
+  user-db:
+    image: postgres:15
+    container_name: user-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: userdb
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d userdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
+  userservice:
+    build: 
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: userservice
+    depends_on:
+      user-db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=user-db
+      - DB_PORT=5432
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=userdb
+      - DB_SSLMODE=disable
+      - HTTP_PORT=8080
+      - GRPC_PORT=50051
+    volumes:
+      - ./user-service/config.yml:/app/config.yml:ro
+      - ./keys:/app/keys:ro
+    restart: on-failure
+
+  user-flyway:
+    image: flyway/flyway:latest
+    container_name: user-flyway
+    command: ["migrate"]
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://user-db:5432/userdb   # исправлено
+      - FLYWAY_USER=user
+      - FLYWAY_PASSWORD=password                            # исправлено
+      - FLYWAY_LOCATIONS=filesystem:/app/migrations
+      - FLYWAY_VALIDATE_MIGRATION_NAMING=true
+      - FLYWAY_BASELINE_ON_MIGRATE=true
+    volumes:
+      - ./user-service/migrations:/app/migrations
+    depends_on:
+      user-db:
+        condition: service_healthy
+    restart: "no"   # или убрать совсем
 
   nginx:
     image: nginx:latest
+    container_name: nginx
     ports:
       - "80:80"
       - "443:443"
@@ -38,6 +97,9 @@ services:
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - identity-service
+      - userservice
+    restart: on-failure
 
 volumes:
   identity_redis_data:
+  user_db_data:

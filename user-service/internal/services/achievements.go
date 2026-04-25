@@ -5,12 +5,14 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/karto4ki/karto4ki-backend/user-service/internal/models"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/storage"
 )
 
 type AchievementRepository interface {
 	Create(ctx context.Context, userID uuid.UUID) error
 	UpdateSets(ctx context.Context, userID uuid.UUID, sets int32) error
+	GetByUserID(ctx context.Context, userID uuid.UUID) (*models.Achievement, error)
 }
 
 type AchievementService struct {
@@ -34,4 +36,15 @@ func (s *AchievementService) UpdateSets(ctx context.Context, userID uuid.UUID, s
 		return err
 	}
 	return nil
+}
+
+func (s *AchievementService) GetByUserID(ctx context.Context, userID uuid.UUID) (*models.Achievement, error) {
+	ach, err := s.repo.GetByUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return ach, nil
 }
