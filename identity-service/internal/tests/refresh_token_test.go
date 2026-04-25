@@ -71,7 +71,7 @@ func TestRefreshService_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, pair.Access)
 	assert.NotEmpty(t, pair.Refresh)
-	assert.NotEqual(t, string(refreshToken), string(pair.Refresh)) // Новый токен
+	assert.NotEqual(t, string(refreshToken), string(pair.Refresh))
 
 	mockRepo.AssertExpectations(t)
 }
