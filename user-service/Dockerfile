@@ -4,13 +4,15 @@ WORKDIR /app/user-service
 
 # Копируем shared в подпапку (для replace)
 COPY shared/ ./shared/
+RUN cd shared && go mod download
 
 # Копируем go.mod и go.sum
 COPY user-service/go.mod user-service/go.sum ./
 RUN go mod download
 
-# Копируем исходники
 COPY user-service/ ./
+
+WORKDIR /app/user-service
 
 # Статическая сборка (CGO off)
 RUN CGO_ENABLED=0 go build -o user-service ./main.go   # или ./cmd/main.go
