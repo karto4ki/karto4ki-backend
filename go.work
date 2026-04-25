@@ -1,7 +1,7 @@
 go 1.26.2
-use (                                                                                                       │
-  ./shared                                                                                                │
-  ./identity-service                                                                                      │
+use (
+  ./shared
+  ./identity-service
   ./user-service
-  ./filestorage-service                                                                                        │
+  ./filestorage-service 
 )
