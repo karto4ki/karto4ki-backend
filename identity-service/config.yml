@@ -33,7 +33,7 @@ signup:
   code_ttl: 5m
 oauth:
   google_client_id: ""
-  apple_client_id: ""
+  apple_client_id: "com.lzkgmr.karto4ki"
 idempotency:
   data_exp: 10m
   lock_ttl: 30s
