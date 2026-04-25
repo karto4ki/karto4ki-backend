@@ -86,7 +86,9 @@ func NewJWT(conf *JWTConfig) gin.HandlerFunc {
 		)
 		c.Request = c.Request.WithContext(ctx)
 
-		c.Set("user_id", sub)
+		if sub, ok := claims["sub"].(string); ok {
+			c.Set("user_id", sub)
+		}
 
 		c.Next()
 	}
