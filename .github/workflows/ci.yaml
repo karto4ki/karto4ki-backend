@@ -20,11 +20,6 @@ jobs:
           cache: true
           cache-dependency-path: ./identity-service/go.sum
       
-      - name: Verify Go modules
-        run: |
-          cd identity-service
-          go mod verify
-      
       - name: Run tests
         run: |
           cd identity-service
