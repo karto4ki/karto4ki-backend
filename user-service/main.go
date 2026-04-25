@@ -103,7 +103,6 @@ func main() {
 		auth.GET("/me/achievements", achievementHandler.GetMyAchievements)
 	}
 
-	// Запуск HTTP сервера
 	httpAddr := fmt.Sprintf(":%d", cfg.HTTPPort)
 	httpSrv := &http.Server{
 		Addr:    httpAddr,
