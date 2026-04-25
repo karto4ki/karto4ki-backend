@@ -9,6 +9,8 @@ require (
 
 require github.com/karto4ki/karto4ki-backend/shared v0.0.0
 
+replace github.com/karto4ki/karto4ki-backend/shared => ../shared
+
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -67,5 +69,3 @@ require (
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/protobuf v1.36.10
 )
-
-replace github.com/karto4ki/karto4ki-backend/shared => ./shared

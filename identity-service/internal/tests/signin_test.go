@@ -123,7 +123,7 @@ func TestSignIn_UserNotFound(t *testing.T) {
 	code := "123456"
 	data := &storage.AuthData{
 		AuthKey: signInKey,
-		UserId:  uuid.Nil, // нет пользователя
+		UserId:  uuid.Nil,
 		Code:    code,
 	}
 

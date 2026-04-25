@@ -7,11 +7,11 @@ db:
   sslmode: disable
 
 jwt:
-  signing_method: HS512
-  lifetime: 3m
+  signing_method: RS256
+  lifetime: 1m
   issuer: identity_service
-  audience: 
-    - user_service
+  audience:
+    - identity_service
   key_file_path: /app/keys/rsa.pub
 
 

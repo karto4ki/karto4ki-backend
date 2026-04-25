@@ -65,7 +65,7 @@ func (s *AppleAuthService) Authenticate(ctx context.Context, idToken string, use
 		if fullName == "" {
 			fullName = strings.Split(info.Email, "@")[0]
 		}
-		username = strings.Split(info.Email, "@")[0] // базовый username
+		username = strings.Split(info.Email, "@")[0]
 
 		createResp, err := s.userClient.CreateUserWithProvider(ctx, &userservice.CreateUserWithProviderRequest{
 			Provider:   "apple",

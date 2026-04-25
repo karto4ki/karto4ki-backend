@@ -38,7 +38,7 @@ func TestSignUp_Success(t *testing.T) {
 		AuthKey:  signUpKey,
 		Email:    email,
 		UserId:   uuid.Nil,
-		Verified: true, // важно: email подтверждён
+		Verified: true,
 	}
 
 	repo := new(MockSignInRepository)
@@ -93,7 +93,7 @@ func TestSignUp_EmailNotVerified(t *testing.T) {
 	signUpKey := uuid.New()
 	data := &storage.AuthData{
 		AuthKey:  signUpKey,
-		Verified: false, // email не подтверждён
+		Verified: false,
 		UserId:   uuid.Nil,
 	}
 	repo := new(MockSignInRepository)

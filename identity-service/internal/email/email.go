@@ -7,11 +7,11 @@ import (
 )
 
 type SMTPConfig struct {
-	Host     string // smtp.gmail.com
-	Port     int    // 587
-	Username string // ваш email
-	Password string // пароль приложения
-	From     string // отправитель
+	Host     string
+	Port     int
+	Username string
+	Password string
+	From     string
 }
 
 type EmailSender interface {

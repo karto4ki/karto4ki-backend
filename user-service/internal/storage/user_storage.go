@@ -187,9 +187,7 @@ func (s *UserStorage) GetUserByUsername(ctx context.Context, username string) (*
 	return &user, nil
 }
 
-// UpdateUser – обновление name, username, notification_enabled
 func (s *UserStorage) UpdateUser(ctx context.Context, id uuid.UUID, name, username string, notificationEnabled bool) (*models.User, error) {
-	// Проверка уникальности username
 	var existingID uuid.UUID
 	checkQuery := `SELECT id FROM users WHERE username = $1 AND id != $2`
 	err := s.db.QueryRow(ctx, checkQuery, username, id).Scan(&existingID)
@@ -222,7 +220,6 @@ func (s *UserStorage) UpdateUser(ctx context.Context, id uuid.UUID, name, userna
 	return &user, nil
 }
 
-// DeleteUser – мягкое или жёсткое удаление (жёсткое)
 func (s *UserStorage) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM users WHERE id = $1`
 	res, err := s.db.Exec(ctx, query, id)
@@ -280,7 +277,6 @@ func (s *UserStorage) DeletePhoto(ctx context.Context, id uuid.UUID) (*models.Us
 	return &user, nil
 }
 
-// SearchUsers – поиск по name и username (ILIKE, пагинация)
 type SearchUsersRequest struct {
 	Name     *string
 	Username *string
@@ -295,7 +291,6 @@ type SearchUsersResponse struct {
 }
 
 func (s *UserStorage) SearchUsers(ctx context.Context, req SearchUsersRequest) (*SearchUsersResponse, error) {
-	// Строим запрос
 	baseQuery := `
         SELECT id, email, name, username, photo_url, created_at, notification_enabled, provider, provider_id
         FROM users
@@ -321,13 +316,11 @@ func (s *UserStorage) SearchUsers(ctx context.Context, req SearchUsersRequest) (
 		counter++
 	}
 
-	// Получаем общее количество
 	var total int
 	if err := s.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, err
 	}
 
-	// Добавляем пагинацию
 	baseQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", counter, counter+1)
 	args = append(args, req.Limit, req.Offset)
 

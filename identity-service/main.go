@@ -60,7 +60,7 @@ type Config struct {
 
 	Idempotency struct {
 		DataExp time.Duration `mapstructure:"data_exp"`
-		LockTTL time.Duration `mapstructure:"lock_ttl"` // Добавлено
+		LockTTL time.Duration `mapstructure:"lock_ttl"`
 	} `mapstructure:"idempotency"`
 
 	EmailCode struct {

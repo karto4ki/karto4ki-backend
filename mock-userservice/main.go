@@ -23,10 +23,9 @@ func (s *mockUserServiceServer) GetUserByEmail(ctx context.Context, req *pb.GetU
 
 func (s *mockUserServiceServer) CreateUserWithEmail(ctx context.Context, req *pb.CreateUserWithEmailRequest) (*pb.CreateUserResponse, error) {
 	log.Printf("CreateUserWithEmail called: %+v", req)
-	// Успешное создание пользователя
 	return &pb.CreateUserResponse{
 		Status:   pb.CreateUserStatus_CREATED,
-		UserId:   &pb.UUID{Value: "123e4567-e89b-12d3-a456-426614174000"}, // фиктивный UUID
+		UserId:   &pb.UUID{Value: "123e4567-e89b-12d3-a456-426614174000"},
 		Name:     &req.Name,
 		Username: &req.Username,
 	}, nil

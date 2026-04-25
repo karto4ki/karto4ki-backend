@@ -1,0 +1,7 @@
+go 1.26.2
+
+use (
+	./identity-service
+	./shared
+	./user-service
+)

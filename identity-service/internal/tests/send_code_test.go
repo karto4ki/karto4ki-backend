@@ -82,7 +82,6 @@ func TestSignInSendCode_Success_NewUser(t *testing.T) {
 
 	repo.On("FindKeyByEmail", mock.Anything, email).Return(nil, storage.ErrAuthKeyNotFound)
 
-	// Пользователь не найден
 	userResp := &userservice.GetUserResponse{
 		Status: userservice.GetUserResponseStatus_NOT_FOUND,
 	}
@@ -110,7 +109,7 @@ func TestSignInSendCode_Success_NewUser(t *testing.T) {
 func TestSignInSendCode_FrequencyExceeded(t *testing.T) {
 	ttl := 5 * time.Minute
 	email := "test@example.com"
-	lastReq := time.Now().UTC().Add(-1 * time.Minute) // менее ttl
+	lastReq := time.Now().UTC().Add(-1 * time.Minute)
 
 	existingData := &storage.AuthData{
 		AuthKey:     uuid.New(),
@@ -129,5 +128,5 @@ func TestSignInSendCode_FrequencyExceeded(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, services.ErrSendCodeFreqExceeded, err)
 	assert.Equal(t, uuid.Nil, key)
-	assert.True(t, isExist) // isExist из существующей записи
+	assert.True(t, isExist)
 }
