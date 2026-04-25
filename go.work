@@ -3,5 +3,5 @@ use (
   ./shared
   ./identity-service
   ./user-service
-  ./filestorage-service 
+//  ./filestorage-service 
 )
