@@ -1,21 +1,24 @@
-FROM golang:1.24.0 AS builder
+FROM golang:1.25.0 AS builder
 
-WORKDIR /app
+WORKDIR /app/identity-service
 
-COPY go.mod go.sum ./
+COPY shared/ ./shared/
+COPY identity-service/go.mod identity-service/go.sum ./
 RUN go mod download
 
-COPY . .
+COPY identity-service/ ./
 
-RUN go build -o main .
+RUN CGO_ENABLED=0 go build -o identity-service ./main.go
 
-FROM ubuntu:latest
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+FROM alpine:latest
 
-WORKDIR /app
+RUN apk --no-cache add ca-certificates
 
-COPY --from=builder /app/main .
+WORKDIR /root/
+
+COPY --from=builder /app/identity-service/identity-service .
+COPY --from=builder /app/identity-service/config.yml ./config.yml
 
 EXPOSE 5000
 
-CMD ["./main"]
+CMD ["./identity-service"]

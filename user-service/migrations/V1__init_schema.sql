@@ -1,6 +1,6 @@
-CREATE SCHEMA "users"
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS users.user (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE,
     name VARCHAR(255) NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users.user (
     provider_id VARCHAR(255)
 );
 
-CREATE TABLE IF NOT EXISTS users.achievements (
+CREATE TABLE IF NOT EXISTS achievements (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     sets INT DEFAULT 0,
     streak INT DEFAULT 0

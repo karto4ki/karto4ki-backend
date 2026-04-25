@@ -22,7 +22,7 @@ internal_token:
 invalidated_token_storage:
   exp: 720h 
 userservice:
-  grpc_addr: mock-userservice:50051
+  grpc_addr: userservice:50051
 redis:
   addr: identity-redis:6379
   password: secret
@@ -40,4 +40,4 @@ idempotency:
 email_code:
   send_frequency: 1m
 grpc_service:
-  port: 9090
+  port: 50051

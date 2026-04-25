@@ -2,11 +2,12 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/karto4ki/karto4ki-backend/shared/postgres"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/models"
 )
@@ -38,7 +39,7 @@ func (s *UserStorage) GetUserByEmail(ctx context.Context, email string) (*models
 		&user.Provider, &user.ProviderId,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
@@ -60,7 +61,7 @@ func (s *UserStorage) GetUserByProvider(ctx context.Context, provider, providerI
 		&user.Provider, &user.ProviderId,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
@@ -75,7 +76,7 @@ func (s *UserStorage) CreateUserWithEmail(ctx context.Context, email, name, user
 	if err == nil {
 		return nil, ErrAlreadyExists
 	}
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
@@ -112,7 +113,7 @@ func (s *UserStorage) CreateUserWithProvider(ctx context.Context, provider, prov
 	if err == nil {
 		return nil, ErrAlreadyExists
 	}
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
@@ -156,10 +157,202 @@ func (s *UserStorage) GetUserByID(ctx context.Context, id uuid.UUID) (*models.Us
 		&user.Provider, &user.ProviderId,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (s *UserStorage) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+	var user models.User
+	query := `
+        SELECT id, email, name, username, photo_url, created_at, notification_enabled, provider, provider_id
+        FROM users
+        WHERE username = $1
+    `
+	row := s.db.QueryRow(ctx, query, username)
+	err := row.Scan(
+		&user.ID, &user.Email, &user.Name, &user.Username,
+		&user.PhotoURL, &user.CreatedAt, &user.NotificationEnabled,
+		&user.Provider, &user.ProviderId,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+// UpdateUser – обновление name, username, notification_enabled
+func (s *UserStorage) UpdateUser(ctx context.Context, id uuid.UUID, name, username string, notificationEnabled bool) (*models.User, error) {
+	// Проверка уникальности username
+	var existingID uuid.UUID
+	checkQuery := `SELECT id FROM users WHERE username = $1 AND id != $2`
+	err := s.db.QueryRow(ctx, checkQuery, username, id).Scan(&existingID)
+	if err == nil {
+		return nil, ErrAlreadyExists
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	query := `
+        UPDATE users
+        SET name = $1, username = $2, notification_enabled = $3
+        WHERE id = $4
+        RETURNING id, email, name, username, photo_url, created_at, notification_enabled, provider, provider_id
+    `
+	var user models.User
+	row := s.db.QueryRow(ctx, query, name, username, notificationEnabled, id)
+	err = row.Scan(
+		&user.ID, &user.Email, &user.Name, &user.Username,
+		&user.PhotoURL, &user.CreatedAt, &user.NotificationEnabled,
+		&user.Provider, &user.ProviderId,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+// DeleteUser – мягкое или жёсткое удаление (жёсткое)
+func (s *UserStorage) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM users WHERE id = $1`
+	res, err := s.db.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// UpdatePhoto
+func (s *UserStorage) UpdatePhoto(ctx context.Context, id uuid.UUID, photoURL string) (*models.User, error) {
+	query := `
+        UPDATE users SET photo_url = $1 WHERE id = $2
+        RETURNING id, email, name, username, photo_url, created_at, notification_enabled, provider, provider_id
+    `
+	var user models.User
+	row := s.db.QueryRow(ctx, query, photoURL, id)
+	err := row.Scan(
+		&user.ID, &user.Email, &user.Name, &user.Username,
+		&user.PhotoURL, &user.CreatedAt, &user.NotificationEnabled,
+		&user.Provider, &user.ProviderId,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+// DeletePhoto
+func (s *UserStorage) DeletePhoto(ctx context.Context, id uuid.UUID) (*models.User, error) {
+	query := `
+        UPDATE users SET photo_url = NULL WHERE id = $1
+        RETURNING id, email, name, username, photo_url, created_at, notification_enabled, provider, provider_id
+    `
+	var user models.User
+	row := s.db.QueryRow(ctx, query, id)
+	err := row.Scan(
+		&user.ID, &user.Email, &user.Name, &user.Username,
+		&user.PhotoURL, &user.CreatedAt, &user.NotificationEnabled,
+		&user.Provider, &user.ProviderId,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+// SearchUsers – поиск по name и username (ILIKE, пагинация)
+type SearchUsersRequest struct {
+	Name     *string
+	Username *string
+	Offset   int
+	Limit    int
+}
+
+type SearchUsersResponse struct {
+	Users  []models.User
+	Offset int
+	Count  int
+}
+
+func (s *UserStorage) SearchUsers(ctx context.Context, req SearchUsersRequest) (*SearchUsersResponse, error) {
+	// Строим запрос
+	baseQuery := `
+        SELECT id, email, name, username, photo_url, created_at, notification_enabled, provider, provider_id
+        FROM users
+        WHERE 1=1
+    `
+	countQuery := `SELECT COUNT(*) FROM users WHERE 1=1`
+	args := []interface{}{}
+	countArgs := []interface{}{}
+	counter := 1
+
+	if req.Name != nil && *req.Name != "" {
+		baseQuery += fmt.Sprintf(" AND name ILIKE $%d", counter)
+		countQuery += fmt.Sprintf(" AND name ILIKE $%d", counter)
+		args = append(args, "%"+*req.Name+"%")
+		countArgs = append(countArgs, "%"+*req.Name+"%")
+		counter++
+	}
+	if req.Username != nil && *req.Username != "" {
+		baseQuery += fmt.Sprintf(" AND username ILIKE $%d", counter)
+		countQuery += fmt.Sprintf(" AND username ILIKE $%d", counter)
+		args = append(args, "%"+*req.Username+"%")
+		countArgs = append(countArgs, "%"+*req.Username+"%")
+		counter++
+	}
+
+	// Получаем общее количество
+	var total int
+	if err := s.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+		return nil, err
+	}
+
+	// Добавляем пагинацию
+	baseQuery += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", counter, counter+1)
+	args = append(args, req.Limit, req.Offset)
+
+	rows, err := s.db.Query(ctx, baseQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := []models.User{}
+	for rows.Next() {
+		var user models.User
+		err := rows.Scan(
+			&user.ID, &user.Email, &user.Name, &user.Username,
+			&user.PhotoURL, &user.CreatedAt, &user.NotificationEnabled,
+			&user.Provider, &user.ProviderId,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return &SearchUsersResponse{
+		Users:  users,
+		Offset: req.Offset,
+		Count:  total,
+	}, nil
 }
