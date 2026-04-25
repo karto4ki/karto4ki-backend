@@ -1,21 +1,18 @@
 FROM golang:1.25.0 AS builder
 
-WORKDIR /app/user-service
+WORKDIR /app
 
-# Копируем shared в подпапку (для replace)
+COPY shared/go.mod shared/go.sum ./shared/
 COPY shared/ ./shared/
 RUN cd shared && go mod download
 
-# Копируем go.mod и go.sum
-COPY user-service/go.mod user-service/go.sum ./
-RUN go mod download
-
-COPY user-service/ ./
+COPY user-service/go.mod user-service/go.sum ./user-service/
+COPY user-service/ ./user-service/
+RUN cd user-service && go mod download
 
 WORKDIR /app/user-service
 
-# Статическая сборка (CGO off)
-RUN CGO_ENABLED=0 go build -o user-service ./main.go   # или ./cmd/main.go
+RUN CGO_ENABLED=0 go build -o user-service ./main.go
 
 FROM alpine:latest
 
@@ -26,8 +23,6 @@ WORKDIR /root/
 COPY --from=builder /app/user-service/user-service .
 COPY --from=builder /app/user-service/config.yml ./config.yml
 
-RUN chmod +x /root/user-service
-
-EXPOSE 8080 50051
+EXPOSE 5000
 
 CMD ["./user-service"]

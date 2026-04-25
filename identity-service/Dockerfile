@@ -1,12 +1,16 @@
 FROM golang:1.25.0 AS builder
 
-WORKDIR /app/identity-service
+WORKDIR /app
 
+COPY shared/go.mod shared/go.sum ./shared/
 COPY shared/ ./shared/
-COPY identity-service/go.mod identity-service/go.sum ./
-RUN go mod download
+RUN cd shared && go mod download
 
-COPY identity-service/ ./
+COPY identity-service/go.mod identity-service/go.sum ./identity-service/
+COPY identity-service/ ./identity-service/
+RUN cd identity-service && go mod download
+
+WORKDIR /app/identity-service
 
 RUN CGO_ENABLED=0 go build -o identity-service ./main.go
 
