@@ -2,11 +2,6 @@ FROM golang:1.25.0 AS builder
 
 WORKDIR /app
 
-ENV GOTOOLCHAIN=local
-ENV GOPROXY=http://proxy.golang.org,direct
-ENV GOSUMDB=off
-ENV GIT_SSL_NO_VERIFY=true
-
 COPY shared/go.mod shared/go.sum ./shared/
 COPY shared/ ./shared/
 RUN cd shared && go mod download
@@ -16,9 +11,12 @@ COPY identity-service/ ./identity-service/
 RUN cd identity-service && go mod download
 
 WORKDIR /app/identity-service
-RUN CGO_ENABLED=0 GOOS=linux go build -o identity-service ./main.go
 
-FROM scratch
+RUN CGO_ENABLED=0 go build -o identity-service ./main.go
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
