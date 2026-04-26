@@ -1,0 +1,1172 @@
+openapi: 3.0.3
+info:
+  title: Card Service REST API
+  description: Card Service REST API for flashcard management
+  version: "1.0"
+servers:
+  - url: http://localhost:80/api/card/v1.0/
+tags:
+  - name: sets
+  - name: cards
+  - name: learning
+  - name: search
+paths:
+  /sets:
+    get:
+      summary: Get user's card sets
+      description: Get list of user's card sets with pagination.
+      tags:
+        - sets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 10
+            maximum: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CardSetsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create new card set
+      description: |
+        Create a new card set (folder/topic).
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `internal`
+      tags:
+        - sets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardSetRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CardSet'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /sets/{setId}:
+    get:
+      summary: Get card set by ID
+      description: |
+        Get detailed information about a specific card set.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - sets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CardSetDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update card set
+      description: |
+        Update card set name or description.
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - sets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCardSetRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CardSet'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete card set
+      description: |
+        Delete card set and all its cards.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - sets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /sets/{setId}/cards:
+    get:
+      summary: Get cards in set
+      description: |
+        Get all cards in a specific set with pagination.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CardsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create new card in set
+      description: |
+        Add a new flashcard to the set.
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Card'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /cards/{cardId}:
+    get:
+      summary: Get card by ID
+      description: |
+        Get detailed information about a specific card.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Card'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update card
+      description: |
+        Update card front, back, or image.
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCardRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Card'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete card
+      description: |
+        Delete a specific card.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - cards
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cardId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /sets/{setId}/study:
+    post:
+      summary: Start learning session
+      description: |
+        Start a learning session for a specific set.
+        Returns cards for study based on spaced repetition algorithm.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - learning
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartStudyRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StudySession'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /study/{sessionId}/answer:
+    post:
+      summary: Submit answer for card
+      description: |
+        Submit answer for a card in learning session.
+        Updates card statistics and spaced repetition schedule.
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `not_found`
+        - `internal`
+      tags:
+        - learning
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAnswerRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AnswerResult'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /sets/{setId}/stats:
+    get:
+      summary: Get set statistics
+      description: |
+        Get learning statistics for a specific set.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - learning
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SetStatistics'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /me/stats:
+    get:
+      summary: Get user learning statistics
+      description: |
+        Get overall learning statistics for the current user.
+        Includes streak, total cards learned, study history.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `internal`
+      tags:
+        - learning
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserStatistics'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /search:
+    get:
+      summary: Search public card sets
+      description: |
+        Search public card sets by topic/name.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `invalid_param`
+        - `internal`
+      tags:
+        - search
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 10
+            maximum: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SearchSetsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /sets/{setId}/clone:
+    post:
+      summary: Clone public card set
+      description: |
+        Clone a public card set to user's library.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - search
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CardSet'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (set is private)
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CardSet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        card_count:
+          type: integer
+          format: int32
+        learned_count:
+          type: integer
+          format: int32
+        is_public:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        author:
+          $ref: '#/components/schemas/AuthorInfo'
+    CardSetDetail:
+      allOf:
+        - $ref: '#/components/schemas/CardSet'
+        - type: object
+          properties:
+            cards:
+              type: array
+              items:
+                $ref: '#/components/schemas/CardPreview'
+    Card:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        set_id:
+          type: string
+          format: uuid
+        front:
+          type: string
+        back:
+          type: string
+        image_url:
+          type: string
+          nullable: true
+        audio_url:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [new, learning, reviewing, mastered]
+        next_review:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    CardPreview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        front:
+          type: string
+        status:
+          type: string
+          enum: [new, learning, reviewing, mastered]
+    CreateCardSetRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        is_public:
+          type: boolean
+          default: false
+    UpdateCardSetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 500
+        is_public:
+          type: boolean
+    CreateCardRequest:
+      type: object
+      required:
+        - front
+        - back
+      properties:
+        front:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        back:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        image_url:
+          type: string
+          nullable: true
+    UpdateCardRequest:
+      type: object
+      properties:
+        front:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        back:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        image_url:
+          type: string
+          nullable: true
+    CardSetsResponse:
+      type: object
+      properties:
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardSet'
+        offset:
+          type: integer
+          format: int32
+        count:
+          type: integer
+          format: int32
+    CardsResponse:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Card'
+        offset:
+          type: integer
+          format: int32
+        count:
+          type: integer
+          format: int32
+    StudySession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        set_id:
+          type: string
+          format: uuid
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/Card'
+        session_type:
+          type: string
+          enum: [review, test, audio]
+    StartStudyRequest:
+      type: object
+      properties:
+        session_type:
+          type: string
+          enum: [review, test, audio]
+          default: review
+        limit:
+          type: integer
+          format: int32
+          default: 20
+    SubmitAnswerRequest:
+      type: object
+      required:
+        - card_id
+        - is_correct
+      properties:
+        card_id:
+          type: string
+          format: uuid
+        is_correct:
+          type: boolean
+        time_spent_ms:
+          type: integer
+          format: int64
+    AnswerResult:
+      type: object
+      properties:
+        card_id:
+          type: string
+          format: uuid
+        new_status:
+          type: string
+          enum: [new, learning, reviewing, mastered]
+        next_review:
+          type: string
+          format: date-time
+        streak:
+          type: integer
+          format: int32
+    SetStatistics:
+      type: object
+      properties:
+        set_id:
+          type: string
+          format: uuid
+        total_cards:
+          type: integer
+          format: int32
+        learned_cards:
+          type: integer
+          format: int32
+        learning_cards:
+          type: integer
+          format: int32
+        new_cards:
+          type: integer
+          format: int32
+        mastery_percentage:
+          type: number
+          format: float
+        study_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudyDay'
+    StudyDay:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        cards_studied:
+          type: integer
+          format: int32
+        time_spent_minutes:
+          type: integer
+          format: int32
+    UserStatistics:
+      type: object
+      properties:
+        total_sets:
+          type: integer
+          format: int32
+        total_cards:
+          type: integer
+          format: int32
+        learned_cards:
+          type: integer
+          format: int32
+        current_streak:
+          type: integer
+          format: int32
+        longest_streak:
+          type: integer
+          format: int32
+        last_study_date:
+          type: string
+          format: date
+          nullable: true
+        total_study_time_minutes:
+          type: integer
+          format: int32
+        study_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudyDay'
+    SearchSetsResponse:
+      type: object
+      properties:
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardSet'
+        offset:
+          type: integer
+          format: int32
+        count:
+          type: integer
+          format: int32
+    AuthorInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        name:
+          type: string
+        photo:
+          type: string
+          nullable: true
+    ErrorResponse:
+      type: object
+      properties:
+        error_type:
+          type: string
+        error_message:
+          type: string
+    ErrorResponseWithDetails:
+      type: object
+      properties:
+        error_type:
+          type: string
+        error_message:
+          type: string
+        error_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+        message:
+          type: string
