@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package filestorage;
+option go_package = "./filestorage";
+
+import "google/protobuf/empty.proto";
+
+enum FileType {
+    AVATAR = 0;
+    CARD_IMAGE = 1;
+    DOCUMENT = 2;
+    OTHER = 3;
+}
+
+message UploadRequest {
+    bytes file = 1;
+    FileType type = 2;
+    string filename = 3;
+}
+
+message UploadResponse {
+    string file_id = 1;
+    string file_url = 2;
+    string file_type = 3;
+    int64 file_size = 4;
+    string mime_type = 5;
+    string created_at = 6;
+}
+
+message FileInfo {
+    string id = 1;
+    string owner_id = 2;
+    string file_type = 3;
+    int64 file_size = 4;
+    string mime_type = 5;
+    string url = 6;
+    string thumbnail_url = 7;
+    string created_at = 8;
+}
+
+message FileId {
+    string id = 1;
+}
+
+message ResizeRequest {
+    string image_id = 1;
+    int32 width = 2;
+    int32 height = 3;
+    string fit = 4;
+}
+
+message ThumbnailRequest {
+    string image_id = 1;
+    string size = 2;
+}
+
+message ImageData {
+    bytes data = 1;
+    string mime_type = 2;
+}
+
+service FileStorageService {
+    rpc Upload(UploadRequest) returns (UploadResponse);
+    rpc GetFile(FileId) returns (FileInfo);
+    rpc DeleteFile(FileId) returns (google.protobuf.Empty);
+    rpc GetRawFile(FileId) returns (ImageData);
+}
+
+service ImageService {
+    rpc Resize(ResizeRequest) returns (ImageData);
+    rpc GetThumbnail(ThumbnailRequest) returns (ImageData);
+}
