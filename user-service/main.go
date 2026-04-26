@@ -74,7 +74,7 @@ func main() {
 	r.Use(gin.Recovery())
 
 	userHandler := handlers.NewUserHandler(userService)
-	profileHandler := handlers.NewProfileHandler(userService)
+	profileHandler := handlers.NewProfileHandler(userService, os.Getenv("FILE_STORAGE_URL"))
 	achievementHandler := handlers.NewAchievementHandler(achievementService)
 
 	r.GET("/v1.0/username/:username", userHandler.CheckUsername)
@@ -99,6 +99,7 @@ func main() {
 
 		auth.PUT("/me/profile-photo", profileHandler.UpdateProfilePhoto)
 		auth.DELETE("/me/profile-photo", profileHandler.DeleteProfilePhoto)
+		auth.POST("/me/profile-photo/upload", profileHandler.UploadProfilePhoto)
 
 		auth.GET("/me/achievements", achievementHandler.GetMyAchievements)
 	}

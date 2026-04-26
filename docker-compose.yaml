@@ -30,6 +30,25 @@ services:
       retries: 5
     restart: on-failure
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "19000:9000"
+      - "19001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
   user-db:
     image: postgres:15
     container_name: user-db
@@ -47,13 +66,15 @@ services:
     restart: on-failure
 
   userservice:
-    build: 
+    build:
       context: .
       dockerfile: user-service/Dockerfile
     container_name: userservice
     depends_on:
       user-db:
         condition: service_healthy
+      filestorage-service:
+        condition: service_started
     environment:
       - DB_HOST=user-db
       - DB_PORT=5432
@@ -63,6 +84,7 @@ services:
       - DB_SSLMODE=disable
       - HTTP_PORT=8080
       - GRPC_PORT=50051
+      - FILE_STORAGE_URL=http://filestorage-service:8081
     volumes:
       - ./user-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
@@ -98,8 +120,24 @@ services:
     depends_on:
       - identity-service
       - userservice
+      - filestorage-service
+    restart: on-failure
+
+  filestorage-service:
+    build:
+      context: .
+      dockerfile: filestorage-service/Dockerfile
+    container_name: filestorage-service
+    volumes:
+      - file_storage_data:/app/uploads
+      - ./filestorage-service/config.yml:/app/config.yml:ro
+      - ./keys:/app/keys:ro
+    environment:
+      - HTTP_PORT=8081
     restart: on-failure
 
 volumes:
   identity_redis_data:
   user_db_data:
+  file_storage_data:
+  minio_data:

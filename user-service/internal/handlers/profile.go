@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"time"
 
@@ -11,11 +15,12 @@ import (
 )
 
 type ProfileHandler struct {
-	userSvc *services.UserService
+	userSvc       *services.UserService
+	fileStorageURL string
 }
 
-func NewProfileHandler(userSvc *services.UserService) *ProfileHandler {
-	return &ProfileHandler{userSvc: userSvc}
+func NewProfileHandler(userSvc *services.UserService, fileStorageURL string) *ProfileHandler {
+	return &ProfileHandler{userSvc: userSvc, fileStorageURL: fileStorageURL}
 }
 
 func (h *ProfileHandler) GetMyProfile(c *gin.Context) {
@@ -106,7 +111,7 @@ func (h *ProfileHandler) UpdateProfilePhoto(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
-	photoURL := "https://your-cdn.com/" + req.PhotoID
+	photoURL := h.fileStorageURL + "/api/storage/v1.0/files/" + req.PhotoID + "/raw"
 	updated, err := h.userSvc.UpdatePhoto(c.Request.Context(), userID, photoURL)
 	if err != nil {
 		if err == services.ErrNotFound {
@@ -116,6 +121,91 @@ func (h *ProfileHandler) UpdateProfilePhoto(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
+	c.JSON(http.StatusOK, gin.H{"data": mapToPrivate(updated)})
+}
+
+func (h *ProfileHandler) UploadProfilePhoto(c *gin.Context) {
+	userIDStr := c.GetString("user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error_type": "unauthorized", "error_message": "invalid user id"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error_type": "invalid_request", "error_message": "Failed to get file"})
+		return
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	part, err := writer.CreateFormFile("file", header.Filename)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to create form"})
+		return
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to copy file"})
+		return
+	}
+
+	fieldWriter, err := writer.CreateFormField("type")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to create field"})
+		return
+	}
+	if _, err := fieldWriter.Write([]byte("avatar")); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to write field"})
+		return
+	}
+
+	if err := writer.Close(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to close writer"})
+		return
+	}
+
+	req, err := http.NewRequest("POST", h.fileStorageURL+"/api/storage/v1.0/upload", body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to create request"})
+		return
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to upload file"})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.JSON(resp.StatusCode, gin.H{"error_type": "upload_failed", "error_message": "Failed to upload file to storage"})
+		return
+	}
+
+	var uploadResp struct {
+		Data struct {
+			FileID  string `json:"file_id"`
+			FileURL string `json:"file_url"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to parse response"})
+		return
+	}
+
+	photoURL := h.fileStorageURL + uploadResp.Data.FileURL
+	updated, err := h.userSvc.UpdatePhoto(c.Request.Context(), userID, photoURL)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to update profile"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": mapToPrivate(updated)})
 }
 
