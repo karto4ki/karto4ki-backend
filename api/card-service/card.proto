@@ -1,0 +1,206 @@
+syntax = "proto3";
+
+package card;
+option go_package = "./cardservice";
+
+import "google/protobuf/empty.proto";
+
+message CardSet {
+    string id = 1;
+    string name = 2;
+    optional string description = 3;
+    int32 card_count = 4;
+    int32 learned_count = 5;
+    bool is_public = 6;
+    string created_at = 7;
+    optional AuthorInfo author = 8;
+}
+
+message CardSetDetail {
+    CardSet set = 1;
+    repeated CardPreview cards = 2;
+}
+
+message CreateCardSetRequest {
+    string name = 1;
+    optional string description = 2;
+    bool is_public = 3;
+}
+
+message UpdateCardSetRequest {
+    string id = 1;
+    optional string name = 2;
+    optional string description = 3;
+    optional bool is_public = 4;
+}
+
+message CardSetId {
+    string id = 1;
+}
+
+message Card {
+    string id = 1;
+    string set_id = 2;
+    string front = 3;
+    string back = 4;
+    optional string image_url = 5;
+    optional string audio_url = 6;
+    CardStatus status = 7;
+    optional string next_review = 8;
+    string created_at = 9;
+}
+
+enum CardStatus {
+    NEW = 0;
+    LEARNING = 1;
+    REVIEWING = 2;
+    MASTERED = 3;
+}
+
+message CardPreview {
+    string id = 1;
+    string front = 2;
+    CardStatus status = 3;
+}
+
+message CreateCardRequest {
+    string set_id = 1;
+    string front = 2;
+    string back = 3;
+    optional string image_url = 4;
+}
+
+message UpdateCardRequest {
+    string id = 1;
+    optional string front = 2;
+    optional string back = 3;
+    optional string image_url = 4;
+}
+
+message CardId {
+    string id = 1;
+}
+
+message CardsRequest {
+    string set_id = 1;
+    int32 offset = 2;
+    int32 limit = 3;
+}
+
+message CardsResponse {
+    repeated Card cards = 1;
+    int32 offset = 2;
+    int32 count = 3;
+}
+
+enum SessionType {
+    REVIEW = 0;
+    TEST = 1;
+    AUDIO = 2;
+}
+
+message StartStudyRequest {
+    string set_id = 1;
+    SessionType session_type = 2;
+    int32 limit = 3;
+}
+
+message StudySession {
+    string id = 1;
+    string set_id = 2;
+    repeated Card cards = 3;
+    SessionType session_type = 4;
+}
+
+message SubmitAnswerRequest {
+    string session_id = 1;
+    string card_id = 2;
+    bool is_correct = 3;
+    int64 time_spent_ms = 4;
+}
+
+message AnswerResult {
+    string card_id = 1;
+    CardStatus new_status = 2;
+    string next_review = 3;
+    int32 streak = 4;
+}
+
+message SetStatistics {
+    string set_id = 1;
+    int32 total_cards = 2;
+    int32 learned_cards = 3;
+    int32 learning_cards = 4;
+    int32 new_cards = 5;
+    float mastery_percentage = 6;
+    repeated StudyDay study_history = 7;
+}
+
+message StudyDay {
+    string date = 1;
+    int32 cards_studied = 2;
+    int32 time_spent_minutes = 3;
+}
+
+message UserStatistics {
+    int32 total_sets = 1;
+    int32 total_cards = 2;
+    int32 learned_cards = 3;
+    int32 current_streak = 4;
+    int32 longest_streak = 5;
+    optional string last_study_date = 6;
+    int32 total_study_time_minutes = 7;
+}
+
+message SearchSetsRequest {
+    string query = 1;
+    int32 offset = 2;
+    int32 limit = 3;
+}
+
+message SearchSetsResponse {
+    repeated CardSet sets = 1;
+    int32 offset = 2;
+    int32 count = 3;
+}
+
+message AuthorInfo {
+    string id = 1;
+    string username = 2;
+    string name = 3;
+    optional string photo = 4;
+}
+
+message CardSetList {
+    repeated CardSet sets = 1;
+    int32 offset = 2;
+    int32 count = 3;
+}
+
+service CardSetService {
+    rpc GetCardSets(CardsRequest) returns (CardSetList);
+    rpc GetCardSet(CardSetId) returns (CardSetDetail);
+    rpc CreateCardSet(CreateCardSetRequest) returns (CardSet);
+    rpc UpdateCardSet(UpdateCardSetRequest) returns (CardSet);
+    rpc DeleteCardSet(CardSetId) returns (google.protobuf.Empty);
+}
+
+service CardService {
+    rpc GetCards(CardsRequest) returns (CardsResponse);
+    rpc GetCard(CardId) returns (Card);
+    rpc CreateCard(CreateCardRequest) returns (Card);
+    rpc UpdateCard(UpdateCardRequest) returns (Card);
+    rpc DeleteCard(CardId) returns (google.protobuf.Empty);
+}
+
+service LearningService {
+    rpc StartStudy(StartStudyRequest) returns (StudySession);
+    rpc SubmitAnswer(SubmitAnswerRequest) returns (AnswerResult);
+    rpc GetSetStatistics(CardSetId) returns (SetStatistics);
+    rpc GetUserStatistics(google.protobuf.Empty) returns (UserStatistics);
+}
+
+service SearchService {
+    rpc SearchSets(SearchSetsRequest) returns (SearchSetsResponse);
+    rpc CloneSet(CardSetId) returns (CardSet);
+}
