@@ -99,12 +99,65 @@ services:
       - FLYWAY_USER=user
       - FLYWAY_PASSWORD=password
       - FLYWAY_LOCATIONS=filesystem:/app/migrations
-      - FLYWAY_VALIDATE_MIGRATION_NAMING=true
+      - FLYWAY_VALIDATE_MIGRATION_NAME=true
       - FLYWAY_BASELINE_ON_MIGRATE=true
     volumes:
       - ./user-service/migrations:/app/migrations
     depends_on:
       user-db:
+        condition: service_healthy
+    restart: "no"
+
+  card-db:
+    image: postgres:15
+    container_name: card-db
+    environment:
+      POSTGRES_USER: card
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: carddb
+    volumes:
+      - card_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U card -d carddb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: on-failure
+
+  card-service:
+    build:
+      context: .
+      dockerfile: card-service/Dockerfile
+    container_name: card-service
+    depends_on:
+      card-db:
+        condition: service_healthy
+      userservice:
+        condition: service_started
+    environment:
+      - HTTP_PORT=8082
+      - GRPC_PORT=50052
+      - USER_SERVICE_URL=http://userservice:8080
+    volumes:
+      - ./card-service/config.yml:/app/config.yml:ro
+      - ./keys:/app/keys:ro
+    restart: on-failure
+
+  card-flyway:
+    image: flyway/flyway:latest
+    container_name: card-flyway
+    command: ["migrate"]
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://card-db:5432/carddb
+      - FLYWAY_USER=card
+      - FLYWAY_PASSWORD=password
+      - FLYWAY_LOCATIONS=filesystem:/app/migrations
+      - FLYWAY_VALIDATE_MIGRATION_NAME=true
+      - FLYWAY_BASELINE_ON_MIGRATE=true
+    volumes:
+      - ./card-service/migrations:/app/migrations
+    depends_on:
+      card-db:
         condition: service_healthy
     restart: "no"
 
@@ -139,5 +192,6 @@ services:
 volumes:
   identity_redis_data:
   user_db_data:
+  card_db_data:
   file_storage_data:
   minio_data:
