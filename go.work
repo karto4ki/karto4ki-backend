@@ -1,7 +1,8 @@
 go 1.26.2
 use (
+	./card-service
 	./identity-service
 	./shared
 	./user-service
-  ./filestorage-service
-  )
+	./filestorage-service
+)
