@@ -69,7 +69,7 @@ func (s *AuthService) extractInternalClaims(userClaims jwt.Claims) jwt.Claims {
 		internalClaims["aud"] = s.internalConfig.Audience
 	}
 
-	internalClaims["typ"] = "internal"
+	internalClaims["typ"] = "internal_access"
 
 	return internalClaims
 }
@@ -80,7 +80,7 @@ func (s *AuthService) ValidateInternalToken(ctx context.Context, token jwt.Token
 		return nil, ErrInvalidJWT
 	}
 
-	if typ, ok := claims["typ"]; !ok || typ != "internal" {
+	if typ, ok := claims["typ"]; !ok || typ != "internal_access" {
 		return nil, ErrInvalidTokenType
 	}
 
