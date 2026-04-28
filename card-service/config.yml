@@ -10,8 +10,8 @@ db:
   sslmode: "disable"
 
 jwt:
-  signing_method: "RS256"
-  issuer: "karto4ki-backend"
+  signing_method: RS256
+  issuer: identity_service
   audience:
-    - "card_service"
-  key_file_path: "/app/keys/rsa.pub"
+    - identity_service
+  key_file_path: /app/keys/rsa.pub

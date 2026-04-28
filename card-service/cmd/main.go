@@ -126,7 +126,7 @@ func loadJWTConfig(cfg config.JWTConfig) *jwt.Config {
 		SigningMethod: cfg.SigningMethod,
 		Issuer:        cfg.Issuer,
 		Audience:      cfg.Audience,
-		Type:          "access",
+		Type:          "internal_access",
 	}
 	if err := config.RSAPublicOnlyKey(readKey(cfg.KeyFilePath)); err != nil {
 		log.Fatal(err)
