@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/karto4ki/karto4ki-backend/identity-service/internal/oauth"
+	pb "github.com/karto4ki/karto4ki-backend/identity-service/internal/userservice"
 	"github.com/karto4ki/karto4ki-backend/identity-service/internal/userservice"
 	"github.com/karto4ki/karto4ki-backend/shared/jwt"
 )
@@ -41,7 +42,11 @@ func (s *GoogleAuthService) Authenticate(ctx context.Context, idToken string) (j
 		return jwt.Pair{}, fmt.Errorf("%w: %v", ErrInvalidGoogleToken, err)
 	}
 
-	userResp, err := s.userClient.GetUserByEmail(ctx, &userservice.GetUserByEmailRequest{Email: info.Email})
+	// Сначала проверяем пользователя по provider + provider_id
+	userResp, err := s.userClient.GetUserByProvider(ctx, &userservice.GetUserByProviderRequest{
+		Provider:   "google",
+		ProviderId: &pb.UUID{Value: info.Sub},
+	})
 	if err != nil {
 		return jwt.Pair{}, fmt.Errorf("%w: %v", ErrUserServiceUnavailable, err)
 	}
@@ -54,24 +59,37 @@ func (s *GoogleAuthService) Authenticate(ctx context.Context, idToken string) (j
 		name = *userResp.Name
 		username = *userResp.Username
 	} else if userResp.Status == userservice.GetUserResponseStatus_NOT_FOUND {
-		username = strings.Split(info.Email, "@")[0]
-		name = info.Name
-
-		createResp, err := s.userClient.CreateUserWithProvider(ctx, &userservice.CreateUserWithProviderRequest{
-			Provider:   "google",
-			ProviderId: info.Sub,
-			Name:       name,
-			Username:   username,
-		})
+		emailResp, err := s.userClient.GetUserByEmail(ctx, &userservice.GetUserByEmailRequest{Email: info.Email})
 		if err != nil {
-			return jwt.Pair{}, fmt.Errorf("%w: %v", ErrUserCreationFailed, err)
+			return jwt.Pair{}, fmt.Errorf("%w: %v", ErrUserServiceUnavailable, err)
 		}
-		if createResp.Status != userservice.CreateUserStatus_CREATED {
-			return jwt.Pair{}, fmt.Errorf("%w: status=%v", ErrUserCreationFailed, createResp.Status)
+
+		if emailResp.Status == userservice.GetUserResponseStatus_SUCCESS {
+			userID = uuid.MustParse(emailResp.UserId.GetValue())
+			name = *emailResp.Name
+			username = *emailResp.Username
+		} else if emailResp.Status == userservice.GetUserResponseStatus_NOT_FOUND {
+			username = strings.Split(info.Email, "@")[0]
+			name = info.Name
+
+			createResp, err := s.userClient.CreateUserWithProvider(ctx, &userservice.CreateUserWithProviderRequest{
+				Provider:   "google",
+				ProviderId: info.Sub,
+				Name:       name,
+				Username:   username,
+			})
+			if err != nil {
+				return jwt.Pair{}, fmt.Errorf("%w: %v", ErrUserCreationFailed, err)
+			}
+			if createResp.Status != userservice.CreateUserStatus_CREATED {
+				return jwt.Pair{}, fmt.Errorf("%w: status=%v", ErrUserCreationFailed, createResp.Status)
+			}
+			userID = uuid.MustParse(createResp.UserId.Value)
+			name = *createResp.Name
+			username = *createResp.Username
+		} else {
+			return jwt.Pair{}, fmt.Errorf("%w: status=%v", ErrUnexpectedUserServiceStatus, emailResp.Status)
 		}
-		userID = uuid.MustParse(createResp.UserId.Value)
-		name = *createResp.Name
-		username = *createResp.Username
 	} else {
 		return jwt.Pair{}, fmt.Errorf("%w: status=%v", ErrUnexpectedUserServiceStatus, userResp.Status)
 	}

@@ -1,0 +1,22 @@
+http_port: 8081
+storage_path: ./uploads
+max_file_size: 10485760
+allowed_types:
+  - "image/jpeg"
+  - "image/png"
+  - "image/gif"
+  - "image/webp"
+  - "image/svg+xml"
+thumbnail_sizes: 
+  small: 100
+  medium: 300
+  large: 600
+
+s3:
+  enabled: true
+  endpoint: "minio:9000"
+  bucket: "karto4ki-files"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  use_ssl: false
+  region: ""

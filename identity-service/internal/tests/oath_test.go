@@ -49,7 +49,7 @@ func TestGoogleAuthService_Authenticate_ExistingUser(t *testing.T) {
 			Name:          name,
 		}, nil)
 
-	// Mock user client
+	// Mock user client - сначала проверяем по провайдеру
 	mockUserClient := new(MockUserServiceClient)
 	userResp := &userservice.GetUserResponse{
 		Status:   userservice.GetUserResponseStatus_SUCCESS,
@@ -57,7 +57,10 @@ func TestGoogleAuthService_Authenticate_ExistingUser(t *testing.T) {
 		Name:     &name,
 		Username: &username,
 	}
-	mockUserClient.On("GetUserByEmail", mock.Anything, &userservice.GetUserByEmailRequest{Email: email}).
+	mockUserClient.On("GetUserByProvider", mock.Anything, &userservice.GetUserByProviderRequest{
+		Provider:   "google",
+		ProviderId: &userservice.UUID{Value: "google-sub"},
+	}).
 		Return(userResp, nil)
 
 	service := services.NewGoogleAuthService(accessConf, refreshConf, mockUserClient, clientID)
@@ -93,7 +96,14 @@ func TestGoogleAuthService_Authenticate_NewUser(t *testing.T) {
 		}, nil)
 
 	mockUserClient := new(MockUserServiceClient)
-	// User not found
+	// Сначала проверяем по провайдеру - не найден
+	mockUserClient.On("GetUserByProvider", mock.Anything, &userservice.GetUserByProviderRequest{
+		Provider:   "google",
+		ProviderId: &userservice.UUID{Value: sub},
+	}).
+		Return(&userservice.GetUserResponse{Status: userservice.GetUserResponseStatus_NOT_FOUND}, nil)
+	
+	// Затем проверяем по email - тоже не найден
 	mockUserClient.On("GetUserByEmail", mock.Anything, &userservice.GetUserByEmailRequest{Email: email}).
 		Return(&userservice.GetUserResponse{Status: userservice.GetUserResponseStatus_NOT_FOUND}, nil)
 

@@ -48,16 +48,19 @@ func NewJWT(conf *JWTConfig) gin.HandlerFunc {
 
 		token := c.Request.Header.Get(headerName)
 		if token == "" {
-			log.Printf("Unauthorized: missing %s header", headerName)
+			log.Printf("[JWT] Unauthorized: missing %s header", headerName)
 			restapi.SendUnautorized(c)
 			c.Abort()
 			return
 		}
 
+		log.Printf("[JWT] Token received on %s: %s...", headerName, token[:min(50, len(token))])
+
 		var claims jwt.Claims
 		var err error
 
 		if conf.Aud != "" {
+			log.Printf("[JWT] Validating with audience: %s", conf.Aud)
 			mapClaims, parseErr := jwt.ParseWithAud(conf.Conf, jwt.Token(token), conf.Aud)
 			if parseErr != nil {
 				err = parseErr
@@ -65,6 +68,7 @@ func NewJWT(conf *JWTConfig) gin.HandlerFunc {
 				claims = jwt.Claims(mapClaims)
 			}
 		} else {
+			log.Printf("[JWT] Validating without audience")
 			mapClaims, parseErr := jwt.Parse(conf.Conf, jwt.Token(token))
 			if parseErr != nil {
 				err = parseErr
@@ -74,11 +78,13 @@ func NewJWT(conf *JWTConfig) gin.HandlerFunc {
 		}
 
 		if err != nil {
-			log.Printf("Unauthorized: %s", err)
+			log.Printf("[JWT] Unauthorized: %v", err)
 			restapi.SendUnautorized(c)
 			c.Abort()
 			return
 		}
+
+		log.Printf("[JWT] Token validated successfully for user: %v", claims["sub"])
 
 		ctx := context.WithValue(
 			c.Request.Context(),
@@ -99,4 +105,12 @@ func GetClaims(ctx context.Context) Claims {
 		return val.(Claims)
 	}
 	return nil
+}
+
+// min returns the smaller of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
