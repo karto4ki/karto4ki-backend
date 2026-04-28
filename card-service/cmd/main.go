@@ -146,7 +146,7 @@ func connectDB(cfg config.DBConfig) *postgres.DB {
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Name, cfg.SSLMode)
 
-	db, err := sql.Open("pq", dsn)
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
