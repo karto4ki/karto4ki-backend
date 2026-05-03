@@ -7,10 +7,17 @@ allowed_types:
   - "image/gif"
   - "image/webp"
   - "image/svg+xml"
-thumbnail_sizes: 
+thumbnail_sizes:
   small: 100
   medium: 300
   large: 600
+
+jwt:
+  signing_method: RS256
+  issuer: identity_service
+  audience:
+    - identity_service
+  key_file_path: /app/keys/rsa.pub
 
 s3:
   enabled: true

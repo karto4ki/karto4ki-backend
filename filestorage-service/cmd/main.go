@@ -127,7 +127,7 @@ func loadJWTConfig(cfg JWTConfig) *jwt.Config {
 		Lifetime:      cfg.Lifetime,
 		Issuer:        cfg.Issuer,
 		Audience:      cfg.Audience,
-		Type:          "access",
+		Type:          "internal_access",
 	}
 	if err := config.RSAPublicOnlyKey(readKey(cfg.KeyFilePath)); err != nil {
 		log.Fatal(err)
@@ -162,8 +162,8 @@ func loadConfig() Config {
 		},
 		JWT: JWTConfig{
 			SigningMethod: "RS256",
-			Issuer:        "karto4ki-backend",
-			Audience:      []string{"filestorage_service"},
+			Issuer:        "identity_service",
+			Audience:      []string{"identity_service"},
 			KeyFilePath:   "/app/keys/rsa.pub",
 		},
 	}
