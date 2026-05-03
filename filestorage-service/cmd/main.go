@@ -53,7 +53,6 @@ func main() {
 		Conf: jwtConf,
 	})
 
-	// Инициализация S3 клиента
 	var s3Client *minio.Client
 	var err error
 	if config.S3.Enabled {
@@ -61,7 +60,6 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to initialize S3 client: %v", err)
 		}
-		// Создаем bucket если не существует
 		if err := createBucketIfNotExists(s3Client, config.S3.Bucket); err != nil {
 			log.Fatalf("Failed to create S3 bucket: %v", err)
 		}
@@ -82,16 +80,16 @@ func main() {
 
 	r := gin.Default()
 
-	r.POST("/api/storage/v1.0/upload", authMiddleware, fileHandler.UploadFile)
+	r.POST("/v1.0/upload", authMiddleware, fileHandler.UploadFile)
 
-	files := r.Group("/api/storage/v1.0/files", authMiddleware)
+	files := r.Group("/v1.0/files", authMiddleware)
 	{
 		files.GET("/:fileId", fileHandler.GetFileInfo)
 		files.DELETE("/:fileId", fileHandler.DeleteFile)
 		files.GET("/:fileId/raw", fileHandler.GetRawFile)
 	}
 
-	images := r.Group("/api/storage/v1.0/images", authMiddleware)
+	images := r.Group("/v1.0/images", authMiddleware)
 	{
 		images.GET("/:imageId/resize", fileHandler.ResizeImage)
 		images.GET("/:imageId/thumbnail", fileHandler.GetThumbnail)

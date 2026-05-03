@@ -46,9 +46,9 @@ func main() {
 
 	r := gin.Default()
 
-	r.POST("/api/card/v1.0/sets", authMiddleware, cardSetHandler.CreateCardSet)
+	r.POST("/v1.0/sets", authMiddleware, cardSetHandler.CreateCardSet)
 
-	sets := r.Group("/api/card/v1.0/sets", authMiddleware)
+	sets := r.Group("/v1.0/sets", authMiddleware)
 	{
 		sets.GET("", cardSetHandler.GetCardSets)
 		sets.GET("/:setId", cardSetHandler.GetCardSet)
@@ -62,25 +62,25 @@ func main() {
 		sets.GET("/:setId/stats", learningHandler.GetSetStatistics)
 	}
 
-	cards := r.Group("/api/card/v1.0/cards", authMiddleware)
+	cards := r.Group("/v1.0/cards", authMiddleware)
 	{
 		cards.GET("/:cardId", cardHandler.GetCard)
 		cards.PUT("/:cardId", cardHandler.UpdateCard)
 		cards.DELETE("/:cardId", cardHandler.DeleteCard)
 	}
 
-	study := r.Group("/api/card/v1.0/study", authMiddleware)
+	study := r.Group("/v1.0/study", authMiddleware)
 	{
 		study.POST("/:sessionId/answer", learningHandler.SubmitAnswer)
 	}
 
-	search := r.Group("/api/card/v1.0/search", authMiddleware)
+	search := r.Group("/v1.0/search", authMiddleware)
 	{
 		search.GET("", cardSetHandler.SearchPublicSets)
 		search.POST("/:setId/clone", cardSetHandler.CloneSet)
 	}
 
-	me := r.Group("/api/card/v1.0/me", authMiddleware)
+	me := r.Group("/v1.0/me", authMiddleware)
 	{
 		me.GET("/stats", learningHandler.GetUserStatistics)
 	}

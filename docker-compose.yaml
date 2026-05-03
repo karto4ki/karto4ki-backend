@@ -174,6 +174,7 @@ services:
       - identity-service
       - userservice
       - filestorage-service
+      - card-service
     restart: on-failure
 
   filestorage-service:
