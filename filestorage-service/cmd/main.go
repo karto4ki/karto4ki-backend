@@ -4,76 +4,46 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/config"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/handlers"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/services"
 	"github.com/karto4ki/karto4ki-backend/shared/auth"
-	"github.com/karto4ki/karto4ki-backend/shared/jwt"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	HTTPPort       int            `yaml:"http_port"`
-	StoragePath    string         `yaml:"storage_path"`
-	MaxFileSize    int64          `yaml:"max_file_size"`
-	AllowedTypes   []string       `yaml:"allowed_types"`
-	ThumbnailSizes map[string]int `yaml:"thumbnail_sizes"`
-	JWT            JWTConfig      `yaml:"jwt"`
-	S3             S3Config       `yaml:"s3"`
-}
-
-type S3Config struct {
-	Enabled   bool   `yaml:"enabled"`
-	Endpoint  string `yaml:"endpoint"`
-	Bucket    string `yaml:"bucket"`
-	AccessKey string `yaml:"access_key"`
-	SecretKey string `yaml:"secret_key"`
-	UseSSL    bool   `yaml:"use_ssl"`
-	Region    string `yaml:"region"`
-}
-
-type JWTConfig struct {
-	SigningMethod string        `yaml:"signing_method"`
-	Lifetime      time.Duration `yaml:"lifetime"`
-	Issuer        string        `yaml:"issuer"`
-	Audience      []string      `yaml:"audience"`
-	KeyFilePath   string        `yaml:"key_file_path"`
-}
-
 func main() {
-	config := loadConfig()
+	cfg := config.LoadConfig("/app/config.yml")
 
-	jwtConf := loadJWTConfig(config.JWT)
+	jwtConf := config.LoadJWTConfig(cfg)
 	authMiddleware := auth.NewJWT(&auth.JWTConfig{
-		Conf: jwtConf,
+		Conf:          jwtConf,
+		DefaultHeader: "X-Internal-Token",
 	})
 
 	var s3Client *minio.Client
 	var err error
-	if config.S3.Enabled {
-		s3Client, err = initS3Client(config.S3)
+	if cfg.S3.Enabled {
+		s3Client, err = initS3Client(cfg.S3)
 		if err != nil {
 			log.Fatalf("Failed to initialize S3 client: %v", err)
 		}
-		if err := createBucketIfNotExists(s3Client, config.S3.Bucket); err != nil {
+		if err := createBucketIfNotExists(s3Client, cfg.S3.Bucket); err != nil {
 			log.Fatalf("Failed to create S3 bucket: %v", err)
 		}
-		log.Printf("S3 client initialized, bucket: %s", config.S3.Bucket)
+		log.Printf("S3 client initialized, bucket: %s", cfg.S3.Bucket)
 	}
 
 	fileService := services.NewFileService(services.Config{
-		StoragePath:    config.StoragePath,
-		MaxFileSize:    config.MaxFileSize,
-		AllowedTypes:   config.AllowedTypes,
-		ThumbnailSizes: config.ThumbnailSizes,
+		StoragePath:    cfg.StoragePath,
+		MaxFileSize:    cfg.MaxFileSize,
+		AllowedTypes:   cfg.AllowedTypes,
+		ThumbnailSizes: cfg.ThumbnailSizes,
 		S3Client:       s3Client,
-		S3Bucket:       config.S3.Bucket,
-		S3Enabled:      config.S3.Enabled,
+		S3Bucket:       cfg.S3.Bucket,
+		S3Enabled:      cfg.S3.Enabled,
 	})
 
 	fileHandler := handlers.NewFileHandler(fileService)
@@ -95,14 +65,14 @@ func main() {
 		images.GET("/:imageId/thumbnail", fileHandler.GetThumbnail)
 	}
 
-	addr := fmt.Sprintf(":%d", config.HTTPPort)
+	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
 	log.Printf("Starting filestorage-service service on %s", addr)
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
-func initS3Client(cfg S3Config) (*minio.Client, error) {
+func initS3Client(cfg config.S3Config) (*minio.Client, error) {
 	return minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
 		Secure: cfg.UseSSL,
@@ -119,61 +89,4 @@ func createBucketIfNotExists(client *minio.Client, bucket string) error {
 		return client.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{})
 	}
 	return nil
-}
-
-func loadJWTConfig(cfg JWTConfig) *jwt.Config {
-	config := &jwt.Config{
-		SigningMethod: cfg.SigningMethod,
-		Lifetime:      cfg.Lifetime,
-		Issuer:        cfg.Issuer,
-		Audience:      cfg.Audience,
-		Type:          "internal_access",
-	}
-	if err := config.RSAPublicOnlyKey(readKey(cfg.KeyFilePath)); err != nil {
-		log.Fatal(err)
-	}
-	return config
-}
-
-func readKey(path string) []byte {
-	key, err := os.ReadFile(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return key
-}
-
-func loadConfig() Config {
-	config := Config{
-		HTTPPort:    8081,
-		StoragePath: "./uploads",
-		MaxFileSize: 10 * 1024 * 1024,
-		AllowedTypes: []string{
-			"image/jpeg",
-			"image/png",
-			"image/gif",
-			"image/webp",
-			"image/svg+xml",
-		},
-		ThumbnailSizes: map[string]int{
-			"small":  100,
-			"medium": 300,
-			"large":  600,
-		},
-		JWT: JWTConfig{
-			SigningMethod: "RS256",
-			Issuer:        "identity_service",
-			Audience:      []string{"identity_service"},
-			KeyFilePath:   "/app/keys/rsa.pub",
-		},
-	}
-
-	data, err := os.ReadFile("config.yml")
-	if err == nil {
-		if err := yaml.Unmarshal(data, &config); err != nil {
-			log.Printf("Failed to parse config: %v, using defaults", err)
-		}
-	}
-
-	return config
 }
