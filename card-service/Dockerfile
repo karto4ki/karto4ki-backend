@@ -15,16 +15,18 @@ COPY card-service/go.mod card-service/go.sum ./card-service/
 COPY card-service/ ./card-service/
 RUN cd card-service && go mod download
 
+COPY keys/ ./keys/
+
 WORKDIR /app/card-service
 RUN CGO_ENABLED=0 GOOS=linux go build -o card-service ./cmd/main.go
 
 FROM scratch
 
-WORKDIR /root/
+WORKDIR /app
 
 COPY --from=builder /app/card-service/card-service .
 COPY --from=builder /app/card-service/config.yml ./config.yml
-COPY keys/ ./keys/
+COPY --from=builder /app/keys/ ./keys/
 
 EXPOSE 8082
 

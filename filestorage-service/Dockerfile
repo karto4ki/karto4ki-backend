@@ -15,16 +15,18 @@ COPY filestorage-service/go.mod filestorage-service/go.sum ./filestorage-service
 COPY filestorage-service/ ./filestorage-service/
 RUN cd filestorage-service && go mod download
 
+COPY keys/ ./keys/
+
 WORKDIR /app/filestorage-service
 RUN CGO_ENABLED=0 GOOS=linux go build -o filestorage-service ./cmd/main.go
 
 FROM scratch
 
-WORKDIR /root/
+WORKDIR /app
 
 COPY --from=builder /app/filestorage-service/filestorage-service .
 COPY --from=builder /app/filestorage-service/config.yml ./config.yml
-COPY keys/ ./keys/
+COPY --from=builder /app/keys/ ./keys/
 
 EXPOSE 8081
 
