@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/config"
@@ -30,7 +31,9 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to initialize S3 client: %v", err)
 		}
-		if err := createBucketIfNotExists(s3Client, cfg.S3.Bucket); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := createBucketIfNotExists(ctx, s3Client, cfg.S3.Bucket); err != nil {
 			log.Fatalf("Failed to create S3 bucket: %v", err)
 		}
 		log.Printf("S3 client initialized, bucket: %s", cfg.S3.Bucket)
@@ -48,7 +51,8 @@ func main() {
 
 	fileHandler := handlers.NewFileHandler(fileService)
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Logger(), gin.Recovery())
 
 	r.POST("/v1.0/upload", authMiddleware, fileHandler.UploadFile)
 
@@ -80,13 +84,13 @@ func initS3Client(cfg config.S3Config) (*minio.Client, error) {
 	})
 }
 
-func createBucketIfNotExists(client *minio.Client, bucket string) error {
-	exists, err := client.BucketExists(context.Background(), bucket)
+func createBucketIfNotExists(ctx context.Context, client *minio.Client, bucket string) error {
+	exists, err := client.BucketExists(ctx, bucket)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		return client.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{})
+		return client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
 	}
 	return nil
 }

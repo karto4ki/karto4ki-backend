@@ -40,7 +40,8 @@ func NewIdentityHandler(service AuthService) gin.HandlerFunc {
 			return
 		}
 
-		c.Header(HeaderInternalToken, string(internalToken))
+		// Set header before writing status
+		c.Writer.Header().Set(HeaderInternalToken, string(internalToken))
 		c.Status(http.StatusOK)
 		c.Abort()
 	}
