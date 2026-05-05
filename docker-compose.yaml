@@ -182,6 +182,9 @@ services:
       context: .
       dockerfile: filestorage-service/Dockerfile
     container_name: filestorage-service
+    depends_on:
+      minio:
+        condition: service_healthy
     volumes:
       - file_storage_data:/app/uploads
       - ./filestorage-service/config.yml:/app/config.yml:ro
