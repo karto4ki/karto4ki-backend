@@ -239,7 +239,9 @@ func loadInternalTokenConfig() *jwt.Config {
 		Audience:      conf.InternalToken.Audience,
 		Type:          "internal_access",
 	}
-	res.RSAKeys(readKey(conf.InternalToken.KeyFilePath))
+	if err := res.RSAKeys(readKey(conf.InternalToken.KeyFilePath)); err != nil {
+		log.Fatalf("Failed to load internal token RSA key: %v", err)
+	}
 	return res
 }
 
