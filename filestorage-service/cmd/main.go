@@ -50,7 +50,8 @@ func main() {
 
 	jwtConf := loadJWTConfig(config.JWT)
 	authMiddleware := auth.NewJWT(&auth.JWTConfig{
-		Conf: jwtConf,
+		Conf:          jwtConf,
+		DefaultHeader: "X-Internal-Token",
 	})
 
 	var s3Client *minio.Client
