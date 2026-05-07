@@ -2,12 +2,51 @@ package config
 
 import (
 	"log"
-	"os"
 	"time"
 
-	"github.com/karto4ki/karto4ki-backend/shared/jwt"
 	"github.com/spf13/viper"
 )
+
+type Config struct {
+	Jwt JWTConfig `mapstructure:"jwt"`
+
+	Redis struct {
+		Addr     string `mapstructure:"addr"`
+		Password string `mapstructure:"password"`
+		DB       int    `mapstructure:"db"`
+	} `mapstructure:"redis"`
+
+	GRPCService struct {
+		Port int `mapstructure:"port"`
+	} `mapstructure:"grpc_service"`
+
+	Idempotency struct {
+		DataExp time.Duration `mapstructure:"data_exp"`
+	} `mapstructure:"idempotency"`
+
+	Upload struct {
+		FileSizeLimit int64 `mapstructure:"file_size_limit"`
+	} `mapstructure:"upload"`
+
+	MultipartUpload struct {
+		MinFileSize int64 `mapstructure:"min_file_size"`
+		MaxPartSize int64 `mapstructure:"max_part_size"`
+	} `mapstructure:"multipart_upload"`
+
+	S3 struct {
+		Bucket    string `mapstructure:"bucket"`
+		URLPrefix string `mapstructure:"url_prefix"`
+		Endpoint  string `mapstructure:"endpoint"`
+		Region    string `mapstructure:"region"`
+	} `mapstructure:"s3"`
+
+	AWS struct {
+		AccessKeyID     string `mapstructure:"access_key_id"`
+		SecretAccessKey string `mapstructure:"secret_access_key"`
+		Region          string `mapstructure:"region"`
+		EndpointURL     string `mapstructure:"endpoint_url"`
+	} `mapstructure:"aws"`
+}
 
 type JWTConfig struct {
 	SigningMethod string        `mapstructure:"signing_method"`
@@ -61,23 +100,29 @@ type Config struct {
 
 func LoadConfig(file string) *Config {
 	viper.AutomaticEnv()
-	viper.BindEnv("s3.endpoint", "S3_ENDPOINT")
-	viper.BindEnv("s3.access_key", "S3_ACCESS_KEY")
-	viper.BindEnv("s3.secret_key", "S3_SECRET_KEY")
+
+	viper.BindEnv("s3.bucket", "FILE_STORAGE_S3_BUCKET")
+	viper.BindEnv("s3.url_prefix", "FILE_STORAGE_S3_URL_PREFIX")
+	viper.BindEnv("s3.endpoint", "FILE_STORAGE_S3_ENDPOINT")
+
+	viper.BindEnv("aws.access_key_id", "FILE_STORAGE_AWS_ACCESS_KEY_ID")
+	viper.BindEnv("aws.secret_access_key", "FILE_STORAGE_AWS_SECRET_ACCESS_KEY")
+	viper.BindEnv("aws.region", "FILE_STORAGE_AWS_REGION")
+	viper.BindEnv("aws.endpoint_url", "FILE_STORAGE_AWS_ENDPOINT_URL")
+
+	viper.BindEnv("redis.addr", "FILE_STORAGE_REDIS_ADDR")
+	viper.BindEnv("redis.password", "FILE_STORAGE_REDIS_PASSWORD")
 
 	viper.SetConfigFile(file)
+
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Printf("config file not found: %v", err)
-		} else {
-			log.Fatalf("viper reading config failed: %s", err)
-		}
+		log.Fatalf("viper reading config failed: %s", err)
 	}
 
-	config := new(Config)
-	if err := viper.UnmarshalExact(&config); err != nil {
-		log.Fatalf("viper config unmarshaling failed: %s", err)
+	conf := new(Config)
+	if err := viper.UnmarshalExact(&conf); err != nil {
+		log.Fatalf("viper config unmarshalling failed: %s", err)
 	}
 
-	return config
+	return conf
 }

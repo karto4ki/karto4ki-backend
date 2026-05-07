@@ -185,12 +185,25 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - file_storage_data:/app/uploads
       - ./filestorage-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
     environment:
       - HTTP_PORT=8081
+      - FILE_STORAGE_REDIS_ADDR=redis:6379
+    restart: on-failure
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
     restart: on-failure
 
 volumes:
@@ -198,4 +211,5 @@ volumes:
   user_db_data:
   card_db_data:
   file_storage_data:
+  redis_data:
   minio_data:

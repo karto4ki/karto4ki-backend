@@ -4,92 +4,138 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
+	"net/http"
+	"os"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/config"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/handlers"
+	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/restapi"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/services"
+	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/storage"
 	"github.com/karto4ki/karto4ki-backend/shared/auth"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/karto4ki/karto4ki-backend/shared/jwt"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
 	cfg := config.LoadConfig("/app/config.yml")
 
-	jwtConf := config.LoadJWTConfig(cfg)
+	// Redis client
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.Redis.Addr,
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+
+	// Проверка подключения к Redis
+	if err := redisClient.Ping(context.Background()).Err(); err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	log.Printf("Connected to Redis at %s", cfg.Redis.Addr)
+
+	// S3 client
+	s3Client := createS3Client(cfg)
+
+	// Storages
+	uploadMetaStorage := storage.NewUploadMetaStorage(redisClient, cfg.Idempotency.DataExp)
+	fileMetaStorage := storage.NewFileMetaStorage(redisClient)
+
+	// JWT auth middleware
+	jwtConf := loadJWTConfig(cfg.Jwt)
 	authMiddleware := auth.NewJWT(&auth.JWTConfig{
 		Conf:          jwtConf,
 		DefaultHeader: "X-Internal-Token",
 	})
 
-	var s3Client *minio.Client
-	var err error
-	if cfg.S3.Enabled {
-		s3Client, err = initS3Client(cfg.S3)
-		if err != nil {
-			log.Fatalf("Failed to initialize S3 client: %v", err)
-		}
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := createBucketIfNotExists(ctx, s3Client, cfg.S3.Bucket); err != nil {
-			log.Fatalf("Failed to create S3 bucket: %v", err)
-		}
-		log.Printf("S3 client initialized, bucket: %s", cfg.S3.Bucket)
-	}
+	// Services
+	uploadInitSvc := services.NewUploadInitService(uploadMetaStorage, s3Client, cfg.S3.Bucket)
+	uploadPartSvc := services.NewUploadPartService(uploadMetaStorage, s3Client, cfg.S3.Bucket)
+	uploadCompleteSvc := services.NewUploadCompleteService(fileMetaStorage, uploadMetaStorage, s3Client, cfg.S3.Bucket, cfg.S3.URLPrefix)
+	uploadAbortSvc := services.NewUploadAbortService(uploadMetaStorage, s3Client, cfg.S3.Bucket)
 
-	fileService := services.NewFileService(services.Config{
-		StoragePath:    cfg.StoragePath,
-		MaxFileSize:    cfg.MaxFileSize,
-		AllowedTypes:   cfg.AllowedTypes,
-		ThumbnailSizes: cfg.ThumbnailSizes,
-		S3Client:       s3Client,
-		S3Bucket:       cfg.S3.Bucket,
-		S3Enabled:      cfg.S3.Enabled,
-	})
+	// Handlers
+	uploadInitHandler := handlers.UploadInit(uploadInitSvc)
+	uploadPartHandler := handlers.UploadPart(&handlers.MultipartUploadConfig{
+		MaxPartSize: cfg.MultipartUpload.MaxPartSize,
+	}, uploadPartSvc)
+	uploadCompleteHandler := handlers.UploadComplete(uploadCompleteSvc)
+	uploadAbortHandler := handlers.UploadAbort(uploadAbortSvc)
 
-	fileHandler := handlers.NewFileHandler(fileService)
-
+	// Router
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-	auth := r.Group("/v1.0")
-	auth.Use(authMiddleware)
+
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, restapi.ErrorResponse{
+			ErrorType:    restapi.ErrTypeFileNotFound,
+			ErrorMessage: "Endpoint not found",
+		})
+	})
+
+	// Multipart upload endpoints
+	multipart := r.Group("/v1.0/upload/multipart", authMiddleware)
 	{
-		auth.POST("/upload", fileHandler.UploadFile)
-		auth.GET("files/:fileId", fileHandler.GetFileInfo)
-		auth.DELETE("files/:fileId", fileHandler.DeleteFile)
-		auth.GET("files/:fileId/raw", fileHandler.GetRawFile)
+		multipart.POST("/init", uploadInitHandler)
+		multipart.PUT("/part", uploadPartHandler)
+		multipart.POST("/complete", uploadCompleteHandler)
+		multipart.PUT("/abort", uploadAbortHandler)
 	}
 
-	images := r.Group("/v1.0/images", authMiddleware)
-	{
-		images.GET("/:imageId/resize", fileHandler.ResizeImage)
-		images.GET("/:imageId/thumbnail", fileHandler.GetThumbnail)
-	}
-
-	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
-	log.Printf("Starting filestorage-service service on %s", addr)
+	addr := fmt.Sprintf(":%d", cfg.GRPCService.Port)
+	log.Printf("Starting filestorage-service on %s", addr)
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
-func initS3Client(cfg config.S3Config) (*minio.Client, error) {
-	return minio.New(cfg.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-		Secure: cfg.UseSSL,
-		Region: cfg.Region,
+func createS3Client(cfg *config.Config) *s3.Client {
+	customResolver := aws.EndpointResolverWithOptionsFunc(
+		func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			return aws.Endpoint{
+				URL:               "http://" + cfg.S3.Endpoint,
+				SigningRegion:     cfg.AWS.Region,
+				HostnameImmutable: true,
+			}, nil
+		},
+	)
+
+	s3Client := s3.NewFromConfig(aws.Config{
+		Region: cfg.AWS.Region,
+		Credentials: credentials.NewStaticCredentialsProvider(
+			cfg.AWS.AccessKeyID,
+			cfg.AWS.SecretAccessKey,
+			"",
+		),
+		EndpointResolverWithOptions: customResolver,
+	}, func(o *s3.Options) {
+		o.UsePathStyle = true // MinIO требует path-style addressing
 	})
+
+	return s3Client
 }
 
-func createBucketIfNotExists(ctx context.Context, client *minio.Client, bucket string) error {
-	exists, err := client.BucketExists(ctx, bucket)
+func loadJWTConfig(cfg config.JWTConfig) *jwt.Config {
+	jwtConf := &jwt.Config{
+		SigningMethod: cfg.SigningMethod,
+		Lifetime:      cfg.Lifetime,
+		Issuer:        cfg.Issuer,
+		Audience:      cfg.Audience,
+		Type:          "internal_access",
+	}
+	if err := jwtConf.RSAPublicOnlyKey(readKey(cfg.KeyFilePath)); err != nil {
+		log.Fatalf("Failed to load JWT public key: %v", err)
+	}
+	return jwtConf
+}
+
+func readKey(path string) []byte {
+	key, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		log.Fatalf("Failed to read key file: %v", err)
 	}
-	if !exists {
-		return client.MakeBucket(ctx, bucket, minio.MakeBucketOptions{})
-	}
-	return nil
+	return key
 }
