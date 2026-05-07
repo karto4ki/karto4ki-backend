@@ -1,10 +1,11 @@
 package config
 
 import (
-	"log"
-	"time"
-
+	"github.com/karto4ki/karto4ki-backend/shared/jwt"
 	"github.com/spf13/viper"
+	"log"
+	"os"
+	"time"
 )
 
 type Config struct {
@@ -86,16 +87,6 @@ type S3Config struct {
 	SecretKey string `mapstructure:"secret_key"`
 	UseSSL    bool   `mapstructure:"use_ssl"`
 	Region    string `mapstructure:"region"`
-}
-
-type Config struct {
-	HTTPPort       int            `mapstructure:"http_port"`
-	StoragePath    string         `mapstructure:"storage_path"`
-	MaxFileSize    int64          `mapstructure:"max_file_size"`
-	AllowedTypes   []string       `mapstructure:"allowed_types"`
-	ThumbnailSizes map[string]int `mapstructure:"thumbnail_sizes"`
-	Jwt            JWTConfig      `mapstructure:"jwt"`
-	S3             S3Config       `mapstructure:"s3"`
 }
 
 func LoadConfig(file string) *Config {
