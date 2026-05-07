@@ -17,6 +17,8 @@ type Config struct {
 		DB       int    `mapstructure:"db"`
 	} `mapstructure:"redis"`
 
+	HTTPPort int `mapstructure:"http_port"`
+
 	GRPCService struct {
 		Port int `mapstructure:"port"`
 	} `mapstructure:"grpc_service"`

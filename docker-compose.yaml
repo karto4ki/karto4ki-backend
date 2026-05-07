@@ -182,6 +182,8 @@ services:
       context: .
       dockerfile: filestorage-service/Dockerfile
     container_name: filestorage-service
+    ports:
+      - "9090:9090"
     depends_on:
       minio:
         condition: service_healthy
@@ -193,6 +195,7 @@ services:
       - ./keys:/app/keys:ro
     environment:
       - HTTP_PORT=8081
+      - GRPC_SERVICE_PORT=9090
       - FILE_STORAGE_REDIS_ADDR=redis:6379
     restart: on-failure
 

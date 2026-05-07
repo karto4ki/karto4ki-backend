@@ -2,9 +2,10 @@ jwt:
   signing_method: RS256
   lifetime: 3m
   issuer: identity_service
-  audience: 
+  audience:
     - filestorage_service
   key_file_path: /app/keys/rsa.pub
+http_port: 8081
 redis:
   addr: redis:6379
   password: ""

@@ -88,6 +88,7 @@ func (s *UploadCompleteService) Complete(ctx context.Context, req *UploadComplet
 		FileID:    upload.FileID,
 		FileName:  upload.FileName,
 		MimeType:  upload.MimeType,
+		FileType:  "other", // TODO: передавать тип файла через UploadInit
 		FileSize:  *head.ContentLength,
 		FileURL:   s.buildFileURL(upload.FileID),
 		CreatedAt: time.Now(),
