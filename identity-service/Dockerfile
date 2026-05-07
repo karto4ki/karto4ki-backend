@@ -10,8 +10,6 @@ COPY identity-service/go.mod identity-service/go.sum ./identity-service/
 COPY identity-service/ ./identity-service/
 RUN cd identity-service && go mod download
 
-COPY keys/ ./keys/
-
 WORKDIR /app/identity-service
 
 RUN CGO_ENABLED=0 go build -o identity-service ./main.go
@@ -20,11 +18,10 @@ FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /app
+WORKDIR /root
 
 COPY --from=builder /app/identity-service/identity-service .
 COPY --from=builder /app/identity-service/config.yml ./config.yml
-COPY --from=builder /app/keys/ ./keys/
 
 EXPOSE 5000
 
