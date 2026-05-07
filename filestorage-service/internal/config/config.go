@@ -50,13 +50,13 @@ type S3Config struct {
 }
 
 type Config struct {
-	HTTPPort       int                 `mapstructure:"http_port"`
-	StoragePath    string              `mapstructure:"storage_path"`
-	MaxFileSize    int64               `mapstructure:"max_file_size"`
-	AllowedTypes   []string            `mapstructure:"allowed_types"`
-	ThumbnailSizes map[string]int      `mapstructure:"thumbnail_sizes"`
-	Jwt            JWTConfig           `mapstructure:"jwt"`
-	S3             S3Config            `mapstructure:"s3"`
+	HTTPPort       int            `mapstructure:"http_port"`
+	StoragePath    string         `mapstructure:"storage_path"`
+	MaxFileSize    int64          `mapstructure:"max_file_size"`
+	AllowedTypes   []string       `mapstructure:"allowed_types"`
+	ThumbnailSizes map[string]int `mapstructure:"thumbnail_sizes"`
+	Jwt            JWTConfig      `mapstructure:"jwt"`
+	S3             S3Config       `mapstructure:"s3"`
 }
 
 func LoadConfig(file string) *Config {

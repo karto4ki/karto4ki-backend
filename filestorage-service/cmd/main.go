@@ -53,14 +53,13 @@ func main() {
 
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
-
-	r.POST("/v1.0/upload", authMiddleware, fileHandler.UploadFile)
-
-	files := r.Group("/v1.0/files", authMiddleware)
+	auth := r.Group("/v1.0")
+	auth.Use(authMiddleware)
 	{
-		files.GET("/:fileId", fileHandler.GetFileInfo)
-		files.DELETE("/:fileId", fileHandler.DeleteFile)
-		files.GET("/:fileId/raw", fileHandler.GetRawFile)
+		auth.POST("/upload", fileHandler.UploadFile)
+		auth.GET("files/:fileId", fileHandler.GetFileInfo)
+		auth.DELETE("files/:fileId", fileHandler.DeleteFile)
+		auth.GET("files/:fileId/raw", fileHandler.GetRawFile)
 	}
 
 	images := r.Group("/v1.0/images", authMiddleware)
