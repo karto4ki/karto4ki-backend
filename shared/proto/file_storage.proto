@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package filestorage;
 
-option go_package = "github.com/karto4ki/karto4ki-backend/shared/proto/filestorage;filestorage";
+option go_package = "github.com/karto4ki/karto4ki-backend/shared/proto;filestorage";
 
 import "google/protobuf/timestamp.proto";
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	pb "github.com/karto4ki/karto4ki-backend/filestorage-service/proto"
+	pb "github.com/karto4ki/karto4ki-backend/shared/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

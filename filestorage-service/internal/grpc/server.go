@@ -5,7 +5,7 @@ import (
 	"net"
 
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/services"
-	pb "github.com/karto4ki/karto4ki-backend/filestorage-service/proto"
+	pb "github.com/karto4ki/karto4ki-backend/shared/proto"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 )

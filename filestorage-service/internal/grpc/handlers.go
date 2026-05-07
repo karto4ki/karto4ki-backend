@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/services"
-	pb "github.com/karto4ki/karto4ki-backend/filestorage-service/proto"
+	pb "github.com/karto4ki/karto4ki-backend/shared/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
