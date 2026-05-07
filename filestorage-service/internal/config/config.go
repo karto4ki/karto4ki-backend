@@ -55,6 +55,7 @@ type Config struct {
 	MaxFileSize    int64               `mapstructure:"max_file_size"`
 	AllowedTypes   []string            `mapstructure:"allowed_types"`
 	ThumbnailSizes map[string]int      `mapstructure:"thumbnail_sizes"`
+	ChunkSize      int64               `mapstructure:"chunk_size"`
 	Jwt            JWTConfig           `mapstructure:"jwt"`
 	S3             S3Config            `mapstructure:"s3"`
 }

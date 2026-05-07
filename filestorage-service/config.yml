@@ -11,6 +11,7 @@ thumbnail_sizes:
   small: 100
   medium: 300
   large: 600
+chunk_size: 5242880 # 5MB - размер части для chunked upload
 
 jwt:
   signing_method: RS256

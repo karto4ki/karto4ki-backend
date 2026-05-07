@@ -3,12 +3,15 @@ package services
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"fmt"
 	"image"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/disintegration/imaging"
@@ -25,10 +28,13 @@ type Config struct {
 	S3Client       *minio.Client
 	S3Bucket       string
 	S3Enabled      bool
+	ChunkSize      int64 // размер части для chunked upload (по умолчанию 5MB)
 }
 
 type FileService struct {
-	config Config
+	config         Config
+	uploadSessions sync.Map // map[uploadID]*models.UploadSession
+	chunkStore     sync.Map // map[uploadID]map[chunkNum][]byte
 }
 
 func NewFileService(config Config) *FileService {
@@ -365,6 +371,182 @@ func (s *FileService) getMimeType(ext string) string {
 		return mime
 	}
 	return "application/octet-stream"
+}
+
+// ========== Chunked Upload Methods ==========
+
+// InitUpload инициализирует сессию загрузки файла частями
+func (s *FileService) InitUpload(ctx context.Context, req *models.UploadInitRequest, ownerID string) (*models.UploadInitResponse, error) {
+	if err := s.validateFileType(req.Filename); err != nil {
+		return nil, err
+	}
+
+	chunkSize := req.ChunkSize
+	if chunkSize <= 0 {
+		chunkSize = s.config.ChunkSize
+		if chunkSize <= 0 {
+			chunkSize = 5 * 1024 * 1024 // 5MB по умолчанию
+		}
+	}
+
+	totalChunks := int((req.TotalSize + chunkSize - 1) / chunkSize)
+	uploadID := uuid.New().String()
+	now := time.Now()
+
+	session := &models.UploadSession{
+		UploadID:    uploadID,
+		Filename:    req.Filename,
+		FileType:    req.FileType,
+		OwnerID:     ownerID,
+		TotalSize:   req.TotalSize,
+		ChunkSize:   chunkSize,
+		TotalChunks: totalChunks,
+		UploadedAt:  now,
+		ExpiresAt:   now.Add(24 * time.Hour), // сессия действительна 24 часа
+	}
+
+	s.uploadSessions.Store(uploadID, session)
+	s.chunkStore.Store(uploadID, make(map[int][]byte))
+
+	return &models.UploadInitResponse{
+		UploadID:    uploadID,
+		ChunkSize:   chunkSize,
+		TotalChunks: totalChunks,
+		ExpiresIn:   86400, // 24 часа в секундах
+	}, nil
+}
+
+// UploadChunk загружает часть файла
+func (s *FileService) UploadChunk(ctx context.Context, uploadID string, chunkNumber int, chunkData []byte) (*models.UploadChunkResponse, error) {
+	sessionVal, ok := s.uploadSessions.Load(uploadID)
+	if !ok {
+		return nil, fmt.Errorf("upload session not found")
+	}
+	session := sessionVal.(*models.UploadSession)
+
+	// Проверка срока действия сессии
+	if time.Now().After(session.ExpiresAt) {
+		s.cleanupUpload(uploadID)
+		return nil, fmt.Errorf("upload session expired")
+	}
+
+	// Проверка номера части
+	if chunkNumber < 1 || chunkNumber > session.TotalChunks {
+		return nil, fmt.Errorf("invalid chunk number")
+	}
+
+	// Вычисляем ETag для части
+	etag := fmt.Sprintf("%x", md5.Sum(chunkData))
+
+	// Сохраняем часть в памяти
+	chunksVal, ok := s.chunkStore.Load(uploadID)
+	if !ok {
+		return nil, fmt.Errorf("failed to get chunk store")
+	}
+	chunks := chunksVal.(map[int][]byte)
+	
+	chunksMu := &sync.Mutex{}
+	chunksMu.Lock()
+	chunks[chunkNumber] = chunkData
+	chunksMu.Unlock()
+
+	uploadedCount := len(chunks)
+
+	return &models.UploadChunkResponse{
+		UploadID:    uploadID,
+		ChunkNumber: chunkNumber,
+		ETag:        etag,
+		Uploaded:    uploadedCount,
+		TotalChunks: session.TotalChunks,
+	}, nil
+}
+
+// CompleteUpload завершает загрузку и собирает файл из частей
+func (s *FileService) CompleteUpload(ctx context.Context, uploadID string) (*models.UploadCompleteResponse, error) {
+	sessionVal, ok := s.uploadSessions.Load(uploadID)
+	if !ok {
+		return nil, fmt.Errorf("upload session not found")
+	}
+	session := sessionVal.(*models.UploadSession)
+
+	// Проверка срока действия сессии
+	if time.Now().After(session.ExpiresAt) {
+		s.cleanupUpload(uploadID)
+		return nil, fmt.Errorf("upload session expired")
+	}
+
+	// Получаем все части
+	chunksVal, ok := s.chunkStore.Load(uploadID)
+	if !ok {
+		return nil, fmt.Errorf("failed to get chunks")
+	}
+	chunks := chunksVal.(map[int][]byte)
+
+	// Проверяем, что все части загружены
+	if len(chunks) != session.TotalChunks {
+		return nil, fmt.Errorf("not all chunks uploaded: got %d, expected %d", len(chunks), session.TotalChunks)
+	}
+
+	// Собираем части в правильном порядке
+	var sortedKeys []int
+	for k := range chunks {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Ints(sortedKeys)
+
+	// Создаем объединенный reader
+	readers := make([]io.Reader, 0, len(chunks))
+	for _, k := range sortedKeys {
+		readers = append(readers, bytes.NewReader(chunks[k]))
+	}
+	combinedReader := io.MultiReader(readers...)
+
+	// Загружаем файл через стандартный метод
+	fileID := uuid.New().String()
+	ext := strings.ToLower(filepath.Ext(session.Filename))
+	if ext == "" {
+		ext = ".bin"
+	}
+	objectName := fmt.Sprintf("%s/%s%s", session.FileType, fileID, ext)
+
+	var fileSize int64
+	var err error
+
+	if s.config.S3Enabled && s.config.S3Client != nil {
+		fileSize, err = s.uploadToS3(ctx, combinedReader, objectName)
+	} else {
+		fileSize, err = s.uploadLocal(combinedReader, objectName)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Очищаем сессию
+	s.cleanupUpload(uploadID)
+
+	fileURL := fmt.Sprintf("/api/storage/v1.0/files/%s/raw", fileID)
+
+	return &models.UploadCompleteResponse{
+		FileID:    fileID,
+		FileURL:   fileURL,
+		FileType:  string(session.FileType),
+		FileSize:  fileSize,
+		MimeType:  s.getMimeType(ext),
+		CreatedAt: time.Now(),
+	}, nil
+}
+
+// AbortUpload отменяет загрузку и очищает ресурсы
+func (s *FileService) AbortUpload(ctx context.Context, uploadID string) error {
+	s.cleanupUpload(uploadID)
+	return nil
+}
+
+// cleanupUpload очищает сессию и части
+func (s *FileService) cleanupUpload(uploadID string) {
+	s.uploadSessions.Delete(uploadID)
+	s.chunkStore.Delete(uploadID)
 }
 
 type buffer struct {

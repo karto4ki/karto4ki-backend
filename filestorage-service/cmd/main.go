@@ -47,6 +47,7 @@ func main() {
 		S3Client:       s3Client,
 		S3Bucket:       cfg.S3.Bucket,
 		S3Enabled:      cfg.S3.Enabled,
+		ChunkSize:      cfg.ChunkSize,
 	})
 
 	fileHandler := handlers.NewFileHandler(fileService)
@@ -54,6 +55,16 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 
+	// Chunked upload endpoints
+	upload := r.Group("/v1.0/upload", authMiddleware)
+	{
+		upload.POST("/init", fileHandler.InitUpload)
+		upload.POST("/chunk", fileHandler.UploadChunk)
+		upload.POST("/complete", fileHandler.CompleteUpload)
+		upload.POST("/abort", fileHandler.AbortUpload)
+	}
+
+	// Simple upload endpoint (for small files)
 	r.POST("/v1.0/upload", authMiddleware, fileHandler.UploadFile)
 
 	files := r.Group("/v1.0/files", authMiddleware)
