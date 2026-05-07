@@ -18,6 +18,7 @@ import (
 
 	"github.com/karto4ki/karto4ki-backend/shared/auth"
 	"github.com/karto4ki/karto4ki-backend/shared/postgres"
+	"github.com/karto4ki/karto4ki-backend/user-service/internal/clients"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/config"
 	pb "github.com/karto4ki/karto4ki-backend/user-service/internal/grpc"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/handlers"
@@ -68,13 +69,29 @@ func main() {
 		}
 	}()
 
+	// Подключение к filestorage-service по gRPC
+	fileStorageAddr := os.Getenv("FILE_STORAGE_GRPC_ADDR")
+	if fileStorageAddr == "" {
+		fileStorageAddr = "filestorage-service:9090"
+	}
+	fileStorageConn, err := clients.NewFileStorageClient(fileStorageAddr)
+	if err != nil {
+		log.Fatalf("failed to connect to filestorage service: %v", err)
+	}
+	defer fileStorageConn.Close()
+	log.Printf("connected to filestorage-service at %s", fileStorageAddr)
+
 	gin.SetMode(gin.DebugMode)
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
 	userHandler := handlers.NewUserHandler(userService)
-	profileHandler := handlers.NewProfileHandler(userService, os.Getenv("FILE_STORAGE_URL"))
+	fileStorageURL := os.Getenv("FILE_STORAGE_URL")
+	if fileStorageURL == "" {
+		fileStorageURL = "http://localhost:9000/karto4ki-files"
+	}
+	profileHandler := handlers.NewProfileHandler(userService, fileStorageConn, fileStorageURL)
 	achievementHandler := handlers.NewAchievementHandler(achievementService)
 
 	r.GET("/v1.0/username/:username", userHandler.CheckUsername)

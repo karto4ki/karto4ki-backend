@@ -22,6 +22,7 @@ type FileMeta struct {
 	FileID    uuid.UUID `json:"file_id"`
 	FileName  string    `json:"file_name"`
 	MimeType  string    `json:"mime_type"`
+	FileType  string    `json:"file_type"`
 	FileSize  int64     `json:"file_size"`
 	FileURL   string    `json:"file_url"`
 	CreatedAt time.Time `json:"created_at"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/config"
+	pbgrpc "github.com/karto4ki/karto4ki-backend/filestorage-service/internal/grpc"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/handlers"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/restapi"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/services"
@@ -85,10 +87,26 @@ func main() {
 		multipart.PUT("/abort", uploadAbortHandler)
 	}
 
-	addr := fmt.Sprintf(":%d", cfg.GRPCService.Port)
-	log.Printf("Starting filestorage-service on %s", addr)
-	if err := r.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	// Запуск HTTP сервера в горутине
+	httpAddr := fmt.Sprintf(":%d", cfg.HTTPPort)
+	log.Printf("Starting HTTP server on %s", httpAddr)
+	go func() {
+		if err := r.Run(httpAddr); err != nil {
+			log.Fatalf("Failed to start HTTP server: %v", err)
+		}
+	}()
+
+	// Запуск gRPC сервера
+	grpcAddr := fmt.Sprintf(":%d", cfg.GRPCService.Port)
+	grpcServer := pbgrpc.NewServer(uploadInitSvc, uploadPartSvc, uploadCompleteSvc, uploadAbortSvc)
+
+	log.Printf("Starting gRPC server on %s", grpcAddr)
+	lis, err := net.Listen("tcp", grpcAddr)
+	if err != nil {
+		log.Fatalf("Failed to listen on gRPC port: %v", err)
+	}
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve gRPC: %v", err)
 	}
 }
 
