@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package filestorage;
+
+option go_package = "github.com/karto4ki/karto4ki-backend/filestorage-service/proto;filestorage";
+
+import "google/protobuf/timestamp.proto";
+
+// FileStorageService предоставляет методы для работы с файлами
+service FileStorageService {
+  // Загрузка файла (простая, для маленьких файлов)
+  rpc UploadFile (UploadFileRequest) returns (UploadFileResponse);
+  
+  // Инициализация многокомпонентной загрузки
+  rpc UploadInit (UploadInitRequest) returns (UploadInitResponse);
+  
+  // Загрузка части файла
+  rpc UploadPart (UploadPartRequest) returns (UploadPartResponse);
+  
+  // Завершение многокомпонентной загрузки
+  rpc UploadComplete (UploadCompleteRequest) returns (UploadCompleteResponse);
+  
+  // Отмена загрузки
+  rpc UploadAbort (UploadAbortRequest) returns (UploadAbortResponse);
+  
+  // Получение информации о файле
+  rpc GetFile (GetFileRequest) returns (GetFileResponse);
+  
+  // Удаление файла
+  rpc DeleteFile (DeleteFileRequest) returns (DeleteFileResponse);
+}
+
+// Типы файлов
+enum FileType {
+  FILE_TYPE_UNSPECIFIED = 0;
+  FILE_TYPE_AVATAR = 1;
+  FILE_TYPE_CARD_IMAGE = 2;
+  FILE_TYPE_DOCUMENT = 3;
+  FILE_TYPE_OTHER = 4;
+}
+
+// ========== UploadFile ==========
+
+message UploadFileRequest {
+  bytes data = 1;                    // Данные файла
+  string file_name = 2;              // Имя файла
+  string mime_type = 3;              // MIME тип
+  FileType file_type = 4;            // Тип файла
+  string owner_id = 5;               // ID владельца
+}
+
+message UploadFileResponse {
+  string file_id = 1;                // ID файла
+  string file_url = 2;               // URL файла
+  FileType file_type = 3;            // Тип файла
+  int64 file_size = 4;               // Размер файла
+  string mime_type = 5;              // MIME тип
+  google.protobuf.Timestamp created_at = 6;  // Дата создания
+}
+
+// ========== UploadInit ==========
+
+message UploadInitRequest {
+  string file_name = 1;              // Имя файла
+  string mime_type = 2;              // MIME тип
+  FileType file_type = 3;            // Тип файла
+  string owner_id = 4;               // ID владельца
+  int64 total_size = 5;              // Общий размер файла
+}
+
+message UploadInitResponse {
+  string upload_id = 1;              // ID сессии загрузки
+  int64 chunk_size = 2;              // Размер части
+  int32 total_chunks = 3;            // Количество частей
+}
+
+// ========== UploadPart ==========
+
+message UploadPartRequest {
+  string upload_id = 1;              // ID сессии загрузки
+  int32 part_number = 2;             // Номер части (1-based)
+  bytes data = 3;                    // Данные части
+}
+
+message UploadPartResponse {
+  string e_tag = 1;                  // ETag части
+  int32 uploaded_parts = 2;          // Количество загруженных частей
+  int32 total_parts = 3;             // Общее количество частей
+}
+
+// ========== UploadComplete ==========
+
+message UploadPartInfo {
+  int32 part_number = 1;             // Номер части
+  string e_tag = 2;                  // ETag части
+}
+
+message UploadCompleteRequest {
+  string upload_id = 1;              // ID сессии загрузки
+  repeated UploadPartInfo parts = 2; // Информация о частях
+}
+
+message UploadCompleteResponse {
+  string file_id = 1;                // ID файла
+  string file_url = 2;               // URL файла
+  FileType file_type = 3;            // Тип файла
+  int64 file_size = 4;               // Размер файла
+  string mime_type = 5;              // MIME тип
+  google.protobuf.Timestamp created_at = 6;  // Дата создания
+}
+
+// ========== UploadAbort ==========
+
+message UploadAbortRequest {
+  string upload_id = 1;              // ID сессии загрузки
+}
+
+message UploadAbortResponse {
+  // Пустой ответ
+}
+
+// ========== GetFile ==========
+
+message GetFileRequest {
+  string file_id = 1;                // ID файла
+}
+
+message GetFileResponse {
+  string file_id = 1;                // ID файла
+  string file_url = 2;               // URL файла
+  string owner_id = 3;               // ID владельца
+  FileType file_type = 4;            // Тип файла
+  int64 file_size = 5;               // Размер файла
+  string mime_type = 6;              // MIME тип
+  google.protobuf.Timestamp created_at = 7;  // Дата создания
+}
+
+// ========== DeleteFile ==========
+
+message DeleteFileRequest {
+  string file_id = 1;                // ID файла
+}
+
+message DeleteFileResponse {
+  // Пустой ответ
+}
