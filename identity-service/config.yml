@@ -25,7 +25,7 @@ userservice:
   grpc_addr: userservice:50051
 redis:
   addr: identity-redis:6379
-  password: secret
+  password: ""
   db: 0
 signin_meta:
   lifetime: 2m
