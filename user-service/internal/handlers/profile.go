@@ -6,19 +6,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/karto4ki/karto4ki-backend/user-service/internal/clients"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/models"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/services"
 )
 
 type ProfileHandler struct {
-	userSvc         *services.UserService
-	fileStorageConn *clients.FileStorageClient
-	fileStorageURL  string
+	userSvc        *services.UserService
+	fileStorageURL string
 }
 
-func NewProfileHandler(userSvc *services.UserService, fileStorageConn *clients.FileStorageClient, fileStorageURL string) *ProfileHandler {
-	return &ProfileHandler{userSvc: userSvc, fileStorageConn: fileStorageConn, fileStorageURL: fileStorageURL}
+func NewProfileHandler(userSvc *services.UserService, fileStorageURL string) *ProfileHandler {
+	return &ProfileHandler{userSvc: userSvc, fileStorageURL: fileStorageURL}
 }
 
 func (h *ProfileHandler) GetMyProfile(c *gin.Context) {
@@ -97,6 +95,9 @@ type UpdatePhotoRequest struct {
 	PhotoID string `json:"photo_id" binding:"required"`
 }
 
+// UpdateProfilePhoto - обновляет аватарку пользователя по file_id
+// Клиент сначала загружает файл в filestorage-service через POST /v1.0/upload/file,
+// затем отправляет file_id в этом endpoint
 func (h *ProfileHandler) UpdateProfilePhoto(c *gin.Context) {
 	userIDStr := c.GetString("user_id")
 	userID, err := uuid.Parse(userIDStr)
@@ -104,12 +105,22 @@ func (h *ProfileHandler) UpdateProfilePhoto(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
 		return
 	}
+
 	var req UpdatePhotoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
+
+	// Проверяем, что file_id валидный UUID
+	if _, err := uuid.Parse(req.PhotoID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid photo_id format"})
+		return
+	}
+
+	// Строим URL к файлу в filestorage-service
 	photoURL := h.fileStorageURL + "/api/storage/v1.0/files/" + req.PhotoID + "/raw"
+
 	updated, err := h.userSvc.UpdatePhoto(c.Request.Context(), userID, photoURL)
 	if err != nil {
 		if err == services.ErrNotFound {
@@ -117,43 +128,6 @@ func (h *ProfileHandler) UpdateProfilePhoto(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"data": mapToPrivate(updated)})
-}
-
-func (h *ProfileHandler) UploadProfilePhoto(c *gin.Context) {
-	userIDStr := c.GetString("user_id")
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
-		return
-	}
-
-	file, header, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error_type": "invalid_request", "error_message": "Failed to get file"})
-		return
-	}
-	defer file.Close()
-
-	// Читаем файл в память
-	fileData := make([]byte, header.Size)
-	if _, err := file.Read(fileData); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to read file"})
-		return
-	}
-
-	// Загружаем через gRPC
-	resp, err := h.fileStorageConn.UploadFile(c.Request.Context(), fileData, header.Filename, header.Header.Get("Content-Type"), "avatar", userIDStr)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "upload_failed", "error_message": "Failed to upload file"})
-		return
-	}
-
-	updated, err := h.userSvc.UpdatePhoto(c.Request.Context(), userID, resp.FileUrl)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "Failed to update profile"})
 		return
 	}
 

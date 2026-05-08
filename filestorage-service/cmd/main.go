@@ -58,6 +58,8 @@ func main() {
 	uploadPartSvc := services.NewUploadPartService(uploadMetaStorage, s3Client, cfg.S3.Bucket)
 	uploadCompleteSvc := services.NewUploadCompleteService(fileMetaStorage, uploadMetaStorage, s3Client, cfg.S3.Bucket, cfg.S3.URLPrefix)
 	uploadAbortSvc := services.NewUploadAbortService(uploadMetaStorage, s3Client, cfg.S3.Bucket)
+	uploadFileSvc := services.NewUploadFileService(fileMetaStorage, s3Client, cfg.S3.Bucket, cfg.S3.URLPrefix)
+	fileSvc := services.NewFileService(fileMetaStorage, s3Client, cfg.S3.Bucket)
 
 	// Handlers
 	uploadInitHandler := handlers.UploadInit(uploadInitSvc)
@@ -66,6 +68,11 @@ func main() {
 	}, uploadPartSvc)
 	uploadCompleteHandler := handlers.UploadComplete(uploadCompleteSvc)
 	uploadAbortHandler := handlers.UploadAbort(uploadAbortSvc)
+	uploadFileHandler := restapi.UploadFile(&restapi.UploadFileConfig{
+		MaxFileSize: cfg.MultipartUpload.MaxFileSize,
+	}, uploadFileSvc)
+	getFileHandler := restapi.GetFile(fileSvc)
+	deleteFileHandler := restapi.DeleteFile(fileSvc)
 
 	// Router
 	r := gin.New()
@@ -78,13 +85,26 @@ func main() {
 		})
 	})
 
-	// Multipart upload endpoints
+	// Multipart upload endpoints (для больших файлов)
 	multipart := r.Group("/v1.0/upload/multipart", authMiddleware)
 	{
 		multipart.POST("/init", uploadInitHandler)
 		multipart.PUT("/part", uploadPartHandler)
 		multipart.POST("/complete", uploadCompleteHandler)
 		multipart.PUT("/abort", uploadAbortHandler)
+	}
+
+	// Simple upload endpoint (для файлов < 10MB)
+	upload := r.Group("/v1.0/upload", authMiddleware)
+	{
+		upload.POST("/file", uploadFileHandler)
+	}
+
+	// File management endpoints
+	files := r.Group("/v1.0/files", authMiddleware)
+	{
+		files.GET("/:file_id", getFileHandler)
+		files.DELETE("/:file_id", deleteFileHandler)
 	}
 
 	// Запуск HTTP сервера в горутине

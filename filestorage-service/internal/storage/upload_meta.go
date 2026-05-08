@@ -107,3 +107,8 @@ func (s *FileMetaStorage) Get(ctx context.Context, fileID uuid.UUID) (*models.Fi
 
 	return &meta, true, nil
 }
+
+// Delete удаляет метаданные файла
+func (s *FileMetaStorage) Delete(ctx context.Context, fileID uuid.UUID) error {
+	return s.client.Del(ctx, s.key(fileID)).Err()
+}

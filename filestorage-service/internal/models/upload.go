@@ -20,6 +20,7 @@ type UploadMeta struct {
 // FileMeta хранит метаданные загруженного файла
 type FileMeta struct {
 	FileID    uuid.UUID `json:"file_id"`
+	OwnerID   string    `json:"owner_id"`
 	FileName  string    `json:"file_name"`
 	MimeType  string    `json:"mime_type"`
 	FileType  string    `json:"file_type"`
