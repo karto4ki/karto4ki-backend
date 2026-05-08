@@ -72,6 +72,9 @@ func (m *idempotencyMiddleware) Handle(c *gin.Context) {
 	// Блокировка в памяти (как в chakchat)
 	m.locker.Lock(key)
 	defer m.locker.Unlock(key)
+
+	defer c.Abort()
+
 	cached, ok, err := m.config.Storage.Get(c.Request.Context(), key)
 	if err != nil {
 		m.sendErrorResponse(c, http.StatusInternalServerError, restapi.ErrTypeInternal, "Failed to check cached response")
