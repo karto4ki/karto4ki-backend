@@ -67,8 +67,15 @@ func (m *idempotencyMiddleware) Handle(c *gin.Context) {
 		return
 	}
 
-	lockToken, err := m.config.Storage.AcquireLock(c.Request.Context(), key, m.config.LockTTL)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	lockToken, err := m.config.Storage.AcquireLock(ctx, key, m.config.LockTTL)
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			m.sendErrorResponse(c, http.StatusGatewayTimeout, restapi.ErrTypeInternal, "Redis unavailable - try again later")
+			return
+		}
 		m.sendErrorResponse(c, http.StatusConflict, ErrRequestInProgress, "Another request with same idempotency key is being processed")
 		return
 	}
