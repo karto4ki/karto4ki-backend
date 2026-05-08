@@ -24,6 +24,8 @@ type UploadPart struct {
 
 type FileMetaStorer interface {
 	Store(context.Context, *models.FileMeta) error
+	Get(ctx context.Context, fileID uuid.UUID) (*models.FileMeta, bool, error)
+	Delete(ctx context.Context, fileID uuid.UUID) error
 }
 
 type UploadMetaGetRemover interface {

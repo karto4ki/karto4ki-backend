@@ -34,6 +34,7 @@ type Config struct {
 	MultipartUpload struct {
 		MinFileSize int64 `mapstructure:"min_file_size"`
 		MaxPartSize int64 `mapstructure:"max_part_size"`
+		MaxFileSize int64 `mapstructure:"max_file_size"`
 	} `mapstructure:"multipart_upload"`
 
 	S3 struct {
