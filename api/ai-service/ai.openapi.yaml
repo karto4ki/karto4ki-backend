@@ -1,0 +1,317 @@
+openapi: 3.0.3
+info:
+  title: AI Service API
+  description: AI-powered flashcard generation API for Karto4ki
+  version: "1.0"
+servers:
+  - url: http://localhost:80/api/ai/v1.0/
+tags:
+  - name: generate
+    description: AI generation endpoints
+paths:
+  /generate-cards:
+    post:
+      summary: Generate flashcards from text
+      description: |
+        Generate flashcards from provided text using AI.
+        Creates a new card set in Card Service and returns generated cards.
+        
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `internal`
+      tags:
+        - generate
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateCardsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GenerateCardsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /generate-quiz:
+    post:
+      summary: Generate quiz from text
+      description: |
+        Generate multiple-choice quiz questions from provided text.
+        
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `internal`
+      tags:
+        - generate
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateQuizRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GenerateQuizResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /summarize:
+    post:
+      summary: Summarize text
+      description: |
+        Create a concise summary of the provided text.
+        
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `internal`
+      tags:
+        - generate
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SummarizeRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/SummarizeResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    GenerateCardsRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Text to generate cards from
+          minLength: 1
+          maxLength: 50000
+          example: "Квантовая механика — раздел физики, изучающий квантовые системы..."
+        card_count:
+          type: integer
+          description: Number of cards to generate (default: 5)
+          minimum: 1
+          maximum: 20
+          default: 5
+          example: 5
+        difficulty:
+          type: string
+          description: Difficulty level
+          enum: [easy, intermediate, advanced]
+          default: intermediate
+          example: "intermediate"
+        language:
+          type: string
+          description: Language code (ISO 639-1)
+          default: "ru"
+          example: "ru"
+        set_name:
+          type: string
+          description: Name for the generated card set
+          maxLength: 100
+          example: "Квантовая механика"
+        set_description:
+          type: string
+          description: Description for the generated card set
+          maxLength: 500
+          nullable: true
+
+    GenerateCardsResponse:
+      type: object
+      properties:
+        set_id:
+          type: string
+          format: uuid
+          description: ID of the created card set
+        set_name:
+          type: string
+          description: Name of the card set
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeneratedCard'
+
+    GeneratedCard:
+      type: object
+      properties:
+        front:
+          type: string
+          description: Question side of the card
+        back:
+          type: string
+          description: Answer side of the card
+
+    GenerateQuizRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 50000
+        question_count:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+        difficulty:
+          type: string
+          enum: [easy, intermediate, advanced]
+          default: intermediate
+        language:
+          type: string
+          default: "ru"
+
+    GenerateQuizResponse:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuizQuestion'
+
+    QuizQuestion:
+      type: object
+      properties:
+        question:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+          minItems: 4
+          maxItems: 4
+        answer:
+          type: string
+        explanation:
+          type: string
+          nullable: true
+
+    SummarizeRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 50000
+        language:
+          type: string
+          default: "ru"
+
+    SummarizeResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error_type:
+          type: string
+        error_message:
+          type: string
+
+    ErrorResponseWithDetails:
+      type: object
+      properties:
+        error_type:
+          type: string
+        error_message:
+          type: string
+        error_details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
