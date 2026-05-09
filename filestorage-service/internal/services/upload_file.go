@@ -28,21 +28,19 @@ func NewUploadFileService(fileMetaStorer FileMetaStorer, client *s3.Client, buck
 	}
 }
 
-// UploadFile - загрузка файла целиком в S3
 func (s *UploadFileService) UploadFile(ctx context.Context, data []byte, fileName, mimeType, fileType, ownerID string) (*models.UploadResponse, error) {
 	fileID := uuid.New()
 
-	// Загружаем файл в S3
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(fileID.String()),
 		Body:        bytes.NewReader(data),
 		ContentType: aws.String(mimeType),
 		Metadata: map[string]string{
-			"owner_id":   ownerID,
-			"file_type":  fileType,
-			"file_name":  fileName,
-			"mime_type":  mimeType,
+			"owner_id":  ownerID,
+			"file_type": fileType,
+			"file_name": fileName,
+			"mime_type": mimeType,
 		},
 	})
 	if err != nil {

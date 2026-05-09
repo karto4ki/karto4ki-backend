@@ -20,7 +20,7 @@ multipart_upload:
   max_file_size: 10485760 # 10MB - максимальный размер для простой загрузки
 s3:
   bucket: karto4ki-files
-  url_prefix: http://localhost:9000/karto4ki-files/
+  url_prefix: http://minio:9000/karto4ki-files/
   endpoint: minio:9000
   region: us-east-1
 aws:

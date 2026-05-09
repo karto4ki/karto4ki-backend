@@ -41,7 +41,7 @@ func NewIdentityHandler(service AuthService) gin.HandlerFunc {
 		}
 
 		c.Header(HeaderInternalToken, "Bearer "+string(internalToken))
-		c.Status(http.StatusNoContent)
+		c.Writer.WriteHeader(http.StatusNoContent)
 	}
 }
 

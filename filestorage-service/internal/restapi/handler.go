@@ -9,15 +9,12 @@ import (
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/services"
 )
 
-// UploadFileConfig - конфигурация для загрузки файла
 type UploadFileConfig struct {
-	MaxFileSize int64 `json:"max_file_size"` // Максимальный размер файла в байтах (по умолчанию 10MB)
+	MaxFileSize int64 `json:"max_file_size"`
 }
 
-// UploadFile - HTTP handler для загрузки файла целиком
 func UploadFile(cfg *UploadFileConfig, svc *services.UploadFileService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Получаем файл из multipart form
 		file, header, err := c.Request.FormFile("file")
 		if err != nil {
 			c.JSON(http.StatusBadRequest, ErrorResponse{
@@ -28,7 +25,6 @@ func UploadFile(cfg *UploadFileConfig, svc *services.UploadFileService) gin.Hand
 		}
 		defer file.Close()
 
-		// Проверка размера файла
 		if cfg.MaxFileSize > 0 && header.Size > cfg.MaxFileSize {
 			c.JSON(http.StatusBadRequest, ErrorResponse{
 				ErrorType:    ErrTypeInvalidRequest,
@@ -37,7 +33,6 @@ func UploadFile(cfg *UploadFileConfig, svc *services.UploadFileService) gin.Hand
 			return
 		}
 
-		// Читаем файл в память
 		fileData := make([]byte, header.Size)
 		if _, err := file.Read(fileData); err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -47,7 +42,6 @@ func UploadFile(cfg *UploadFileConfig, svc *services.UploadFileService) gin.Hand
 			return
 		}
 
-		// Получаем owner_id из контекста (JWT token)
 		ownerIDStr := c.GetString("user_id")
 		if ownerIDStr == "" {
 			c.JSON(http.StatusUnauthorized, ErrorResponse{
@@ -57,10 +51,8 @@ func UploadFile(cfg *UploadFileConfig, svc *services.UploadFileService) gin.Hand
 			return
 		}
 
-		// Определяем тип файла (avatar, document, etc.)
 		fileType := c.DefaultPostForm("file_type", "other")
 
-		// Загружаем файл через сервис
 		resp, err := svc.UploadFile(c.Request.Context(), fileData, header.Filename, header.Header.Get("Content-Type"), fileType, ownerIDStr)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -79,7 +71,6 @@ func UploadFile(cfg *UploadFileConfig, svc *services.UploadFileService) gin.Hand
 	}
 }
 
-// GetFile - HTTP handler для получения информации о файле
 func GetFile(svc *services.FileService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fileIDStr := c.Param("file_id")
@@ -92,7 +83,6 @@ func GetFile(svc *services.FileService) gin.HandlerFunc {
 			return
 		}
 
-		// Получаем информацию о файле
 		fileMeta, found, err := svc.GetFileMeta(c.Request.Context(), fileID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -121,7 +111,6 @@ func GetFile(svc *services.FileService) gin.HandlerFunc {
 	}
 }
 
-// DeleteFile - HTTP handler для удаления файла
 func DeleteFile(svc *services.FileService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fileIDStr := c.Param("file_id")
@@ -134,7 +123,6 @@ func DeleteFile(svc *services.FileService) gin.HandlerFunc {
 			return
 		}
 
-		// Получаем owner_id из токена
 		ownerIDStr := c.GetString("user_id")
 		if ownerIDStr == "" {
 			c.JSON(http.StatusUnauthorized, ErrorResponse{
@@ -144,7 +132,6 @@ func DeleteFile(svc *services.FileService) gin.HandlerFunc {
 			return
 		}
 
-		// Проверяем, что пользователь владеет файлом
 		fileMeta, found, err := svc.GetFileMeta(c.Request.Context(), fileID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -169,7 +156,6 @@ func DeleteFile(svc *services.FileService) gin.HandlerFunc {
 			return
 		}
 
-		// Удаляем файл
 		if err := svc.DeleteFile(c.Request.Context(), fileID); err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{
 				ErrorType:    ErrTypeInternal,
