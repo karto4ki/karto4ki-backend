@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/karto4ki/karto4ki-backend/shared/jwt"
 )
@@ -27,14 +28,14 @@ func NewAuthService(userConfig, internalConfig *jwt.Config) *AuthService {
 func (s *AuthService) Authenticate(ctx context.Context, token jwt.Token) (jwt.Token, error) {
 	claims, err := jwt.Parse(s.userConfig, token)
 	if err != nil {
-		switch {
-		case errors.Is(err, jwt.ErrTokenExpired):
+		log.Printf("jwt validation failed: %s", err)
+		if err == jwt.ErrTokenExpired {
 			return "", ErrTypeAccessTokenExpired
-		case errors.Is(err, jwt.ErrInvalidTokenType):
-			return "", ErrInvalidTokenType
-		default:
-			return "", ErrInvalidJWT
 		}
+		if err == jwt.ErrInvalidTokenType {
+			return "", ErrInvalidTokenType
+		}
+		return "", ErrInvalidJWT
 	}
 
 	internalClaims := s.extractInternalClaims(jwt.Claims(claims))
