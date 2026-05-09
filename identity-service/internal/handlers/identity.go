@@ -40,10 +40,8 @@ func NewIdentityHandler(service AuthService) gin.HandlerFunc {
 			return
 		}
 
-		// Set header before writing status
-		c.Writer.Header().Set(HeaderInternalToken, string(internalToken))
-		c.Status(http.StatusOK)
-		c.Abort()
+		c.Header(HeaderInternalToken, "Bearer "+string(internalToken))
+		c.Status(http.StatusNoContent)
 	}
 }
 
@@ -59,14 +57,6 @@ func extractBearerToken(authHeader string) (jwt.Token, bool) {
 	}
 
 	return jwt.Token(token), true
-}
-
-func respondUnauthorized(c *gin.Context, message string) {
-	c.JSON(http.StatusUnauthorized, restapi.ErrorResponse{
-		ErrorType:    restapi.ErrTypeUnautorized,
-		ErrorMessage: message,
-	})
-	c.Abort()
 }
 
 func handleAuthError(c *gin.Context, err error) {
@@ -90,21 +80,11 @@ func handleAuthError(c *gin.Context, err error) {
 		c.Error(err)
 		restapi.SendInternalError(c)
 	}
-	c.Abort()
 }
 
-func getInternalToken(c *gin.Context) (string, bool) {
-	token := c.GetHeader(HeaderInternalToken)
-	if token == "" {
-		return "", false
-	}
-	return token, true
-}
-
-func GetInternalToken(c *gin.Context) string {
-	token, ok := getInternalToken(c)
-	if !ok {
-		panic("internal token not found in request context")
-	}
-	return token
+func respondUnauthorized(c *gin.Context, message string) {
+	c.JSON(http.StatusUnauthorized, restapi.ErrorResponse{
+		ErrorType:    restapi.ErrTypeUnautorized,
+		ErrorMessage: message,
+	})
 }
