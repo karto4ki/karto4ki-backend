@@ -54,7 +54,7 @@ func (s *UploadFileService) UploadFile(ctx context.Context, data []byte, fileNam
 		MimeType:  mimeType,
 		FileType:  fileType,
 		FileSize:  int64(len(data)),
-		FileURL:   s.urlPrefix + "/api/storage/v1.0/files/" + fileID.String() + "/raw",
+		FileURL:   s.urlPrefix + fileID.String(),
 		CreatedAt: time.Now(),
 	}
 
