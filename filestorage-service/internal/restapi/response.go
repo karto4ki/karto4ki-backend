@@ -32,23 +32,6 @@ type SuccessResponse struct {
 	Data interface{} `json:"data"`
 }
 
-type UploadFileResponse struct {
-	FileID   string `json:"file_id"`
-	FileURL  string `json:"file_url"`
-	FileSize int64  `json:"file_size"`
-	MimeType string `json:"mime_type"`
-}
-
-type FileInfoResponse struct {
-	FileID    string `json:"file_id"`
-	FileURL   string `json:"file_url"`
-	OwnerID   string `json:"owner_id"`
-	FileType  string `json:"file_type"`
-	FileSize  int64  `json:"file_size"`
-	MimeType  string `json:"mime_type"`
-	CreatedAt string `json:"created_at"`
-}
-
 func SendSuccess(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, SuccessResponse{Data: data})
 }

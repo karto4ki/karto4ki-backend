@@ -15,7 +15,6 @@ import (
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/config"
 	pbgrpc "github.com/karto4ki/karto4ki-backend/filestorage-service/internal/grpc"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/handlers"
-	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/restapi"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/services"
 	"github.com/karto4ki/karto4ki-backend/filestorage-service/internal/storage"
 	"github.com/karto4ki/karto4ki-backend/shared/auth"
@@ -68,20 +67,20 @@ func main() {
 	}, uploadPartSvc)
 	uploadCompleteHandler := handlers.UploadComplete(uploadCompleteSvc)
 	uploadAbortHandler := handlers.UploadAbort(uploadAbortSvc)
-	uploadFileHandler := restapi.UploadFile(&restapi.UploadFileConfig{
+	uploadFileHandler := handlers.UploadFile(&handlers.UploadFileConfig{
 		MaxFileSize: cfg.MultipartUpload.MaxFileSize,
 	}, uploadFileSvc)
-	getFileHandler := restapi.GetFile(fileSvc)
-	deleteFileHandler := restapi.DeleteFile(fileSvc)
+	getFileHandler := handlers.GetFile(fileSvc)
+	deleteFileHandler := handlers.DeleteFile(fileSvc)
 
 	// Router
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
 
 	r.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, restapi.ErrorResponse{
-			ErrorType:    restapi.ErrTypeFileNotFound,
-			ErrorMessage: "Endpoint not found",
+		c.JSON(http.StatusNotFound, gin.H{
+			"error_type":    "FILE_NOT_FOUND",
+			"error_message": "Endpoint not found",
 		})
 	})
 
