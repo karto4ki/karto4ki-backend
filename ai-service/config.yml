@@ -1,0 +1,25 @@
+http_port: 8083
+
+llm:
+  provider: openai
+  api_key: ""
+  base_url: ""
+  model: gpt-4o-mini
+
+generation:
+  default_card_count: 5
+  max_card_count: 20
+  min_card_count: 1
+  default_difficulty: intermediate
+  default_language: ru
+
+card_service:
+  url: http://nginx/api/card
+  timeout: 30s
+
+jwt:
+  signing_method: RS256
+  issuer: ai_service
+  audience:
+    - ai_service
+  key_file_path: /app/keys/rsa.pub
