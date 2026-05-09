@@ -49,6 +49,21 @@ services:
       retries: 5
     restart: on-failure
 
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing myminio/karto4ki-files;
+      mc anonymous set download myminio/karto4ki-files;
+      exit 0;
+      "
+    restart: "no"
+
   user-db:
     image: postgres:15
     container_name: user-db
