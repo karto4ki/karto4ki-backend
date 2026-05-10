@@ -90,7 +90,6 @@ func (e *mockLockError) Error() string {
 }
 
 func TestStoresResponse(t *testing.T) {
-	// Arrange
 	r, storage := setUp()
 	r.POST("/200-with-body", func(c *gin.Context) {
 		c.JSON(http.StatusOK, restapi.SuccessResponse{
@@ -102,11 +101,9 @@ func TestStoresResponse(t *testing.T) {
 
 	const idempotencyKey = "d6f67723-cf79-46a2-9864-ab0d541cd434"
 
-	// Act
 	resp := execute(r, "/200-with-body", idempotencyKey)
 	captured, ok, err := storage.Get(context.Background(), idempotencyKey)
 
-	// Assert
 	assert.NoError(t, err)
 	assert.True(t, ok)
 	assert.Equal(t, http.StatusOK, captured.StatusCode)
@@ -114,7 +111,6 @@ func TestStoresResponse(t *testing.T) {
 }
 
 func TestReturnsStored(t *testing.T) {
-	// Arrange
 	r, repo := setUp()
 	r.POST("/200", func(_ *gin.Context) {
 		assert.FailNow(t, "This code is not to re-execute")
@@ -133,17 +129,14 @@ func TestReturnsStored(t *testing.T) {
 	err := repo.Store(context.Background(), idempotencyKey, cachedResp)
 	require.NoError(t, err)
 
-	// Act
 	resp := execute(r, "/200", idempotencyKey)
 
-	// Assert
 	assert.Equal(t, cachedResp.StatusCode, resp.Code)
 	assert.Equal(t, cachedResp.Headers.Get("Custom-Header"), resp.Header().Get("Custom-Header"))
 	assert.Equal(t, cachedResp.Body, resp.Body.Bytes())
 }
 
 func TestSlowExecutionFastRetry(t *testing.T) {
-	// Arrange
 	r, storage := setUp()
 
 	callCount := 0

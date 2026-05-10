@@ -42,7 +42,6 @@ func (s *GoogleAuthService) Authenticate(ctx context.Context, idToken string) (j
 		return jwt.Pair{}, fmt.Errorf("%w: %v", ErrInvalidGoogleToken, err)
 	}
 
-	// Сначала проверяем пользователя по provider + provider_id
 	userResp, err := s.userClient.GetUserByProvider(ctx, &userservice.GetUserByProviderRequest{
 		Provider:   "google",
 		ProviderId: &pb.UUID{Value: info.Sub},

@@ -1,25 +1,36 @@
 http_port: 8083
 
 llm:
-  provider: openai
+  provider: openrouter
   api_key: ""
-  base_url: ""
-  model: gpt-4o-mini
+  base_url: https://openrouter.ai/api/v1
+  model: meta-llama/llama-3.1-70b-instruct
 
 generation:
   default_card_count: 5
-  max_card_count: 20
+  max_card_count: 150
   min_card_count: 1
   default_difficulty: intermediate
   default_language: ru
 
+pdf:
+  max_file_size_mb: 10
+  min_text_length: 100
+
 card_service:
-  url: http://nginx/api/card
+  grpc_address: card-service:50052
   timeout: 30s
+
+redis:
+  host: redis
+  port: 6379
+  password: ""
+  db: 0
+  task_ttl_hours: 24
 
 jwt:
   signing_method: RS256
   issuer: ai_service
   audience:
-    - ai_service
+    - card_service
   key_file_path: /app/keys/rsa.pub

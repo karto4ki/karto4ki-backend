@@ -35,24 +35,26 @@ type QuizQuestion struct {
 }
 
 type OpenAIClient struct {
-	client *openai.Client
-	model  string
+	client   *openai.Client
+	model    string
+	provider string
 }
 
-func NewOpenAIClient(apiKey, baseURL, model string) *OpenAIClient {
+func NewOpenAIClient(apiKey, baseURL, model, provider string) *OpenAIClient {
 	config := openai.DefaultConfig(apiKey)
-	
+
 	if baseURL != "" {
 		config.BaseURL = baseURL
 	}
-	
+
 	config.HTTPClient = &http.Client{
 		Timeout: 60 * time.Second,
 	}
-	
+
 	return &OpenAIClient{
-		client: openai.NewClientWithConfig(config),
-		model:  model,
+		client:   openai.NewClientWithConfig(config),
+		model:    model,
+		provider: provider,
 	}
 }
 

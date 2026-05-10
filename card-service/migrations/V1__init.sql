@@ -1,4 +1,3 @@
--- Таблица наборов карточек
 CREATE TABLE IF NOT EXISTS card_sets (
     id UUID PRIMARY KEY,
     owner_id UUID NOT NULL,
@@ -12,7 +11,6 @@ CREATE INDEX idx_card_sets_owner_id ON card_sets(owner_id);
 CREATE INDEX idx_card_sets_is_public ON card_sets(is_public);
 CREATE INDEX idx_card_sets_created_at ON card_sets(created_at);
 
--- Таблица карточек
 CREATE TABLE IF NOT EXISTS cards (
     id UUID PRIMARY KEY,
     set_id UUID NOT NULL REFERENCES card_sets(id) ON DELETE CASCADE,
@@ -30,7 +28,6 @@ CREATE INDEX idx_cards_set_id ON cards(set_id);
 CREATE INDEX idx_cards_status ON cards(status);
 CREATE INDEX idx_cards_next_review ON cards(next_review);
 
--- Таблица сессий обучения
 CREATE TABLE IF NOT EXISTS study_sessions (
     id UUID PRIMARY KEY,
     set_id UUID NOT NULL REFERENCES card_sets(id) ON DELETE CASCADE,
@@ -42,7 +39,6 @@ CREATE TABLE IF NOT EXISTS study_sessions (
 CREATE INDEX idx_study_sessions_set_id ON study_sessions(set_id);
 CREATE INDEX idx_study_sessions_user_id ON study_sessions(user_id);
 
--- Таблица истории обучения
 CREATE TABLE IF NOT EXISTS study_history (
     id SERIAL PRIMARY KEY,
     user_id UUID NOT NULL,

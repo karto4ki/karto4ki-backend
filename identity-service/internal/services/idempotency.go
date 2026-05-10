@@ -69,7 +69,6 @@ func (m *idempotencyMiddleware) Handle(c *gin.Context) {
 		return
 	}
 
-	// Блокировка в памяти (как в chakchat)
 	m.locker.Lock(key)
 	defer m.locker.Unlock(key)
 

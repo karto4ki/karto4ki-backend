@@ -1,21 +1,30 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/config"
+	"github.com/karto4ki/karto4ki-backend/card-service/internal/grpc"
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/handlers"
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/services"
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/storage"
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/userclient"
+	pb "github.com/karto4ki/karto4ki-backend/shared/proto/card"
 	"github.com/karto4ki/karto4ki-backend/shared/auth"
 	"github.com/karto4ki/karto4ki-backend/shared/jwt"
 	"github.com/karto4ki/karto4ki-backend/shared/postgres"
 	_ "github.com/lib/pq"
+	grpcLib "google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 )
 
@@ -85,16 +94,54 @@ func main() {
 		me.GET("/stats", learningHandler.GetUserStatistics)
 	}
 
-	addr := fmt.Sprintf(":%d", cfg.HTTPPort)
-	log.Printf("Starting card-service on %s", addr)
-	if err := r.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	httpAddr := fmt.Sprintf(":%d", cfg.HTTPPort)
+	httpSrv := &http.Server{
+		Addr:    httpAddr,
+		Handler: r,
 	}
+
+	go func() {
+		log.Printf("HTTP server listening on %s", httpAddr)
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+	}()
+
+	grpcLis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
+	if err != nil {
+		log.Fatalf("Failed to listen on gRPC port %d: %v", cfg.GRPCPort, err)
+	}
+
+	grpcServer := grpcLib.NewServer()
+	pb.RegisterCardServiceServer(grpcServer, grpc.NewCardSetGRPCService(cardSetService))
+	pb.RegisterCardServiceServer(grpcServer, grpc.NewCardGRPCService(cardService))
+
+	go func() {
+		log.Printf("gRPC server listening on :%d", cfg.GRPCPort)
+		if err := grpcServer.Serve(grpcLis); err != nil {
+			log.Fatalf("gRPC server error: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down servers...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := httpSrv.Shutdown(ctx); err != nil {
+		log.Fatal("HTTP server forced shutdown:", err)
+	}
+	grpcServer.GracefulStop()
+	log.Println("Servers stopped")
 }
 
 func loadConfig() config.Config {
 	cfg := config.Config{
 		HTTPPort: 8082,
+		GRPCPort: 50052,
 		DB: config.DBConfig{
 			Host:     "card-db",
 			Port:     5432,

@@ -88,6 +88,8 @@ services:
     depends_on:
       user-db:
         condition: service_healthy
+      user-flyway:
+        condition: service_completed_successfully
       filestorage-service:
         condition: service_started
     environment:
@@ -147,6 +149,8 @@ services:
     depends_on:
       card-db:
         condition: service_healthy
+      card-flyway:
+        condition: service_completed_successfully
       userservice:
         condition: service_started
     environment:
@@ -183,13 +187,14 @@ services:
     container_name: ai-service
     depends_on:
       - card-service
+      - redis
     volumes:
       - ./ai-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
     environment:
       - LLM_API_KEY=${LLM_API_KEY}
-      - LLM_BASE_URL=${LLM_BASE_URL}
-      - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
+      - LLM_BASE_URL=${LLM_BASE_URL:-https://openrouter.ai/api/v1}
+      - LLM_MODEL=${LLM_MODEL:-meta-llama/llama-3.1-70b-instruct}
       - LLM_MOCK=${LLM_MOCK:-false}
     restart: on-failure
 
