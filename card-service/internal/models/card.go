@@ -11,12 +11,20 @@ const (
 	StatusMastered CardStatus = "mastered"
 )
 
+type CardRating int
+
+const (
+	RatingForgot CardRating = 0
+	RatingRemember CardRating = 1
+)
+
 type SessionType string
 
 const (
 	SessionTypeReview SessionType = "review"
 	SessionTypeTest   SessionType = "test"
 	SessionTypeAudio  SessionType = "audio"
+	SessionTypeLearn  SessionType = "learn"
 )
 
 type CardSet struct {
@@ -48,6 +56,7 @@ type Card struct {
 	AudioURL   *string    `json:"audio_url,omitempty"`
 	Status     CardStatus `json:"status"`
 	ErrorCount int32      `json:"error_count"`
+	LastRating CardRating `json:"last_rating"`
 	NextReview *time.Time `json:"next_review,omitempty"`
 	CreatedAt  time.Time  `json:"created_at"`
 }
@@ -80,6 +89,7 @@ type AnswerResult struct {
 	NextReview time.Time  `json:"next_review"`
 	Streak     int32      `json:"streak"`
 	ErrorCount int32      `json:"error_count"`
+	LastRating CardRating `json:"last_rating"`
 }
 
 type SetStatistics struct {

@@ -26,7 +26,7 @@ type CardStorage interface {
 	Delete(ctx context.Context, id string) error
 	GetCountBySet(ctx context.Context, setID string) (int32, error)
 	GetCardsForStudy(ctx context.Context, setID string, sessionType models.SessionType, limit int32) ([]models.Card, error)
-	UpdateCardStatus(ctx context.Context, cardID string, status models.CardStatus, errorCount int32, nextReview time.Time, streak int32) error
+	UpdateCardStatus(ctx context.Context, cardID string, status models.CardStatus, errorCount int32, lastRating models.CardRating, nextReview time.Time, streak int32) error
 }
 
 type StudySessionStorage interface {
@@ -198,26 +198,31 @@ func (c *cardStorage) GetCardsForStudy(ctx context.Context, setID string, sessio
 	var query string
 	switch sessionType {
 	case models.SessionTypeReview:
-		// Приоритет: карточки с просроченным next_review, затем с большим error_count
-		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, next_review, created_at FROM cards
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
 				 WHERE set_id = $1 AND (next_review IS NULL OR next_review <= NOW())
-				 ORDER BY 
+				 ORDER BY
 					CASE WHEN next_review IS NULL THEN 0 ELSE 1 END,
 					error_count DESC,
 					next_review ASC
 				 LIMIT $2`
+	case models.SessionTypeLearn:
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
+				 WHERE set_id = $1
+				 ORDER BY
+					last_rating ASC,
+					CASE WHEN next_review IS NULL OR next_review <= NOW() THEN 0 ELSE 1 END,
+					error_count DESC,
+					created_at ASC
+				 LIMIT $2`
 	case models.SessionTypeTest:
-		// Случайные карточки для теста
-		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, next_review, created_at FROM cards
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
 				 WHERE set_id = $1 ORDER BY RANDOM() LIMIT $2`
 	case models.SessionTypeAudio:
-		// Аудио режим - только карточки с аудио
-		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, next_review, created_at FROM cards
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
 				 WHERE set_id = $1 AND audio_url IS NOT NULL ORDER BY RANDOM() LIMIT $2`
 	default:
-		// По умолчанию - приоритет карточкам с большим error_count
-		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, next_review, created_at FROM cards
-				 WHERE set_id = $1 ORDER BY error_count DESC, created_at ASC LIMIT $2`
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
+				 WHERE set_id = $1 ORDER BY last_rating ASC, error_count DESC, created_at ASC LIMIT $2`
 	}
 
 	rows, err := c.db.QueryContext(ctx, query, setID, limit)
@@ -230,7 +235,7 @@ func (c *cardStorage) GetCardsForStudy(ctx context.Context, setID string, sessio
 	for rows.Next() {
 		var card models.Card
 		var nextReview sql.NullTime
-		if err := rows.Scan(&card.ID, &card.SetID, &card.Front, &card.Back, &card.ImageURL, &card.AudioURL, &card.Status, &card.ErrorCount, &nextReview, &card.CreatedAt); err != nil {
+		if err := rows.Scan(&card.ID, &card.SetID, &card.Front, &card.Back, &card.ImageURL, &card.AudioURL, &card.Status, &card.ErrorCount, &card.LastRating, &nextReview, &card.CreatedAt); err != nil {
 			return nil, err
 		}
 		if nextReview.Valid {
@@ -241,9 +246,9 @@ func (c *cardStorage) GetCardsForStudy(ctx context.Context, setID string, sessio
 	return cards, rows.Err()
 }
 
-func (c *cardStorage) UpdateCardStatus(ctx context.Context, cardID string, status models.CardStatus, errorCount int32, nextReview time.Time, streak int32) error {
-	query := `UPDATE cards SET status = $1, error_count = $2, next_review = $3 WHERE id = $4`
-	_, err := c.db.ExecContext(ctx, query, status, errorCount, nextReview, cardID)
+func (c *cardStorage) UpdateCardStatus(ctx context.Context, cardID string, status models.CardStatus, errorCount int32, lastRating models.CardRating, nextReview time.Time, streak int32) error {
+	query := `UPDATE cards SET status = $1, error_count = $2, last_rating = $3, next_review = $4 WHERE id = $5`
+	_, err := c.db.ExecContext(ctx, query, status, errorCount, lastRating, nextReview, cardID)
 	return err
 }
 
@@ -288,7 +293,6 @@ func NewStatisticsStorage(db *postgres.DB) StatisticsStorage {
 func (s *statisticsStorage) GetSetStatistics(ctx context.Context, setID string) (*models.SetStatistics, error) {
 	stats := &models.SetStatistics{SetID: setID}
 
-	// Get card counts by status
 	query := `SELECT
 			  COUNT(*) FILTER (WHERE status = 'new') as new_cards,
 			  COUNT(*) FILTER (WHERE status = 'learning') as learning_cards,
@@ -304,7 +308,6 @@ func (s *statisticsStorage) GetSetStatistics(ctx context.Context, setID string) 
 		stats.MasteryPercentage = float32(stats.LearnedCards) / float32(stats.TotalCards) * 100
 	}
 
-	// Get study history for the last 7 days
 	historyQuery := `SELECT study_date, cards_studied, time_spent_minutes
 					 FROM study_history
 					 WHERE set_id = $1 AND study_date >= CURRENT_DATE - INTERVAL '7 days'
@@ -341,7 +344,6 @@ func (s *statisticsStorage) GetUserStatistics(ctx context.Context, userID string
 		return nil, err
 	}
 
-	// Get study streak and total time
 	streakQuery := `SELECT
 					COUNT(DISTINCT study_date) FILTER (WHERE study_date >= CURRENT_DATE - INTERVAL '7 days') as current_streak,
 					SUM(time_spent_minutes) FILTER (WHERE study_date >= CURRENT_DATE - INTERVAL '30 days') as total_time
@@ -349,12 +351,10 @@ func (s *statisticsStorage) GetUserStatistics(ctx context.Context, userID string
 					WHERE user_id = $1`
 	err = s.db.QueryRowContext(ctx, streakQuery, userID).Scan(&stats.CurrentStreak, &stats.TotalStudyTimeMinutes)
 	if err != nil {
-		// Ignore error if no study history
 		stats.CurrentStreak = 0
 		stats.TotalStudyTimeMinutes = 0
 	}
 
-	// Get longest streak
 	longestStreakQuery := `SELECT COUNT(*) as streak
 						   FROM (
 								SELECT study_date,
@@ -370,7 +370,6 @@ func (s *statisticsStorage) GetUserStatistics(ctx context.Context, userID string
 		stats.LongestStreak = 0
 	}
 
-	// Get last study date
 	lastDateQuery := `SELECT MAX(study_date) FROM study_history WHERE user_id = $1`
 	var lastDate sql.NullTime
 	err = s.db.QueryRowContext(ctx, lastDateQuery, userID).Scan(&lastDate)
@@ -378,7 +377,6 @@ func (s *statisticsStorage) GetUserStatistics(ctx context.Context, userID string
 		stats.LastStudyDate = &lastDate.Time
 	}
 
-	// Get study history for the last 7 days
 	historyQuery := `SELECT study_date, SUM(cards_studied) as cards_studied, SUM(time_spent_minutes) as time_spent_minutes
 					 FROM study_history
 					 WHERE user_id = $1 AND study_date >= CURRENT_DATE - INTERVAL '7 days'
