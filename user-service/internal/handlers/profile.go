@@ -95,9 +95,6 @@ type UpdatePhotoRequest struct {
 	PhotoID string `json:"photo_id" binding:"required"`
 }
 
-// UpdateProfilePhoto - обновляет аватарку пользователя по file_id
-// Клиент сначала загружает файл в filestorage-service через POST /v1.0/upload/file,
-// затем отправляет file_id в этом endpoint
 func (h *ProfileHandler) UpdateProfilePhoto(c *gin.Context) {
 	userIDStr := c.GetString("user_id")
 	userID, err := uuid.Parse(userIDStr)
@@ -112,13 +109,11 @@ func (h *ProfileHandler) UpdateProfilePhoto(c *gin.Context) {
 		return
 	}
 
-	// Проверяем, что file_id валидный UUID
 	if _, err := uuid.Parse(req.PhotoID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid photo_id format"})
 		return
 	}
 
-	// Строим URL к файлу в filestorage-service
 	photoURL := h.fileStorageURL + "/api/storage/v1.0/files/" + req.PhotoID + "/raw"
 
 	updated, err := h.userSvc.UpdatePhoto(c.Request.Context(), userID, photoURL)
