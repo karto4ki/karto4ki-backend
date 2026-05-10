@@ -14,7 +14,9 @@ paths:
       summary: Generate flashcards from text
       description: |
         Generate flashcards from provided text using AI.
-        Creates a new card set in Card Service and returns generated cards.
+        Creates a new card set in Card Service asynchronously.
+        
+        Returns a task_id that can be used to poll for progress status.
         
         Possible `error_type` values:
         - `invalid_json`
@@ -37,6 +39,98 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/GenerateCardsRequest'
+      responses:
+        '202':
+          description: Accepted - Generation task started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GenerationTaskStarted'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /generate-cards/status/{task_id}:
+    get:
+      summary: Get generation task status
+      description: |
+        Poll for the current status of a card generation task.
+        
+        Returns progress percentage (0-100), current status, and generated cards when complete.
+        
+        Possible `error_type` values:
+        - `not_found` (task_id doesn't exist)
+        - `internal`
+      tags:
+        - generate
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GenerationTask'
+        '404':
+          description: Task Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /generate-cards-from-pdf:
+    post:
+      summary: Generate flashcards from PDF file
+      description: |
+        Extract text from uploaded PDF file and generate flashcards using AI.
+        Creates a new card set in Card Service and returns generated cards.
+
+        Possible `error_type` values:
+        - `validation_failed` (file too large, insufficient text)
+        - `unauthorized`
+        - `internal`
+      tags:
+        - generate
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GenerateCardsFromPDFRequest'
       responses:
         '200':
           description: OK
@@ -175,7 +269,7 @@ components:
           type: integer
           description: Number of cards to generate (default: 5)
           minimum: 1
-          maximum: 20
+          maximum: 150
           default: 5
           example: 5
         difficulty:
@@ -198,6 +292,39 @@ components:
           type: string
           description: Description for the generated card set
           maxLength: 500
+          nullable: true
+
+    GenerateCardsFromPDFRequest:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          description: PDF file to extract text from (max 10MB)
+        card_count:
+          type: integer
+          description: Number of cards to generate (default: 5)
+          minimum: 1
+          maximum: 150
+          default: 5
+        difficulty:
+          type: string
+          description: Difficulty level
+          enum: [easy, intermediate, advanced]
+          default: intermediate
+        language:
+          type: string
+          description: Language code (ISO 639-1)
+          default: "ru"
+        set_name:
+          type: string
+          description: Name for the generated card set
+          default: "PDF Generated Set"
+        set_description:
+          type: string
+          description: Description for the generated card set
           nullable: true
 
     GenerateCardsResponse:
@@ -237,7 +364,7 @@ components:
         question_count:
           type: integer
           minimum: 1
-          maximum: 20
+          maximum: 150
           default: 5
         difficulty:
           type: string
@@ -290,6 +417,80 @@ components:
       properties:
         summary:
           type: string
+
+    GenerationTaskStarted:
+      type: object
+      description: Response when a generation task is started asynchronously
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: Unique identifier for tracking generation progress
+        status:
+          type: string
+          enum: [pending]
+          description: Initial status of the task
+      required:
+        - task_id
+        - status
+
+    GenerationTask:
+      type: object
+      description: Current state of a card generation task
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          description: Current task status
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Completion percentage (0-100)
+        total_cards:
+          type: integer
+          description: Total number of cards to generate
+        generated_cards:
+          type: integer
+          description: Number of cards generated so far
+        set_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the created card set (only when completed)
+        set_name:
+          type: string
+          description: Name of the generated card set
+        error:
+          type: string
+          nullable: true
+          description: Error message if task failed
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - task_id
+        - user_id
+        - status
+        - progress
+        - total_cards
+        - generated_cards
+        - set_name
+        - created_at
+        - updated_at
 
     ErrorResponse:
       type: object
