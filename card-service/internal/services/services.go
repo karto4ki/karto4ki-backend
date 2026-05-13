@@ -372,7 +372,7 @@ func (s *LearningService) StartStudySession(ctx context.Context, setID, userID s
 	return session, nil
 }
 
-func (s *LearningService) SubmitAnswer(ctx context.Context, sessionID, cardID, userID string, isCorrect bool, timeSpentMs int64) (*AnswerResult, error) {
+func (s *LearningService) SubmitAnswer(ctx context.Context, sessionID, cardID, userID string, rating models.CardRating, timeSpentMs int64) (*AnswerResult, error) {
 	session, err := s.sessionStorage.GetByID(ctx, sessionID)
 	if err != nil {
 		return nil, ErrNotFound
@@ -387,10 +387,9 @@ func (s *LearningService) SubmitAnswer(ctx context.Context, sessionID, cardID, u
 		return nil, ErrNotFound
 	}
 
-	// Calculate new status and next review based on spaced repetition
-	newStatus, nextReview, streak, errorCount := CalculateSpacedRepetition(card.Status, card.ErrorCount, isCorrect)
+	newStatus, nextReview, streak, errorCount := CalculateSpacedRepetition(card.Status, card.ErrorCount, rating)
 
-	if err := s.cardStorage.UpdateCardStatus(ctx, cardID, newStatus, errorCount, nextReview, streak); err != nil {
+	if err := s.cardStorage.UpdateCardStatus(ctx, cardID, newStatus, errorCount, rating, nextReview, streak); err != nil {
 		return nil, err
 	}
 
@@ -406,6 +405,7 @@ func (s *LearningService) SubmitAnswer(ctx context.Context, sessionID, cardID, u
 		NextReview: nextReview,
 		Streak:     streak,
 		ErrorCount: errorCount,
+		LastRating: rating,
 	}, nil
 }
 
@@ -417,13 +417,13 @@ func (s *LearningService) GetUserStatistics(ctx context.Context, userID string) 
 	return s.statsStorage.GetUserStatistics(ctx, userID)
 }
 
-func CalculateSpacedRepetition(currentStatus models.CardStatus, errorCount int32, isCorrect bool) (models.CardStatus, time.Time, int32, int32) {
+func CalculateSpacedRepetition(currentStatus models.CardStatus, errorCount int32, rating models.CardRating) (models.CardStatus, time.Time, int32, int32) {
 	var nextStatus models.CardStatus
 	var daysUntilReview int
 	var streak int32 = 1
 	var newErrorCount int32 = errorCount
 
-	if isCorrect {
+	if rating == models.RatingRemember {
 		if newErrorCount > 0 {
 			newErrorCount--
 		}
@@ -467,4 +467,5 @@ type AnswerResult struct {
 	NextReview time.Time
 	Streak     int32
 	ErrorCount int32
+	LastRating models.CardRating
 }

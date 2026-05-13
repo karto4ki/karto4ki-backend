@@ -15,7 +15,11 @@ type Config struct {
 
 	Generation GenerationConfig `yaml:"generation"`
 
+	PDF PDFConfig `yaml:"pdf"`
+
 	CardService CardServiceConfig `yaml:"card_service"`
+
+	Redis RedisConfig `yaml:"redis"`
 
 	JWT JWTConfig `yaml:"jwt"`
 }
@@ -35,9 +39,22 @@ type GenerationConfig struct {
 	DefaultLanguage  string `yaml:"default_language"`
 }
 
+type PDFConfig struct {
+	MaxFileSizeMB   int `yaml:"max_file_size_mb"`
+	MinTextLength   int `yaml:"min_text_length"`
+}
+
 type CardServiceConfig struct {
-	URL     string        `yaml:"url"`
-	Timeout time.Duration `yaml:"timeout"`
+	GRPCAddress string        `yaml:"grpc_address"`
+	Timeout     time.Duration `yaml:"timeout"`
+}
+
+type RedisConfig struct {
+	Host         string `yaml:"host"`
+	Port         int    `yaml:"port"`
+	Password     string `yaml:"password"`
+	DB           int    `yaml:"db"`
+	TaskTTLHours int    `yaml:"task_ttl_hours"`
 }
 
 type JWTConfig struct {
@@ -78,7 +95,7 @@ func LoadConfig(path string) *Config {
 		cfg.Generation.DefaultCardCount = 5
 	}
 	if cfg.Generation.MaxCardCount == 0 {
-		cfg.Generation.MaxCardCount = 20
+		cfg.Generation.MaxCardCount = 150
 	}
 	if cfg.Generation.MinCardCount == 0 {
 		cfg.Generation.MinCardCount = 1
@@ -89,8 +106,17 @@ func LoadConfig(path string) *Config {
 	if cfg.Generation.DefaultLanguage == "" {
 		cfg.Generation.DefaultLanguage = "ru"
 	}
+	if cfg.PDF.MaxFileSizeMB == 0 {
+		cfg.PDF.MaxFileSizeMB = 10
+	}
+	if cfg.PDF.MinTextLength == 0 {
+		cfg.PDF.MinTextLength = 100
+	}
 	if cfg.CardService.Timeout == 0 {
 		cfg.CardService.Timeout = 30 * time.Second
+	}
+	if cfg.Redis.TaskTTLHours == 0 {
+		cfg.Redis.TaskTTLHours = 24
 	}
 
 	return &cfg

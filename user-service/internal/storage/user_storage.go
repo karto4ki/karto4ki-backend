@@ -233,7 +233,6 @@ func (s *UserStorage) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// UpdatePhoto
 func (s *UserStorage) UpdatePhoto(ctx context.Context, id uuid.UUID, photoURL string) (*models.User, error) {
 	query := `
         UPDATE users SET photo_url = $1 WHERE id = $2
@@ -255,7 +254,6 @@ func (s *UserStorage) UpdatePhoto(ctx context.Context, id uuid.UUID, photoURL st
 	return &user, nil
 }
 
-// DeletePhoto
 func (s *UserStorage) DeletePhoto(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	query := `
         UPDATE users SET photo_url = NULL WHERE id = $1

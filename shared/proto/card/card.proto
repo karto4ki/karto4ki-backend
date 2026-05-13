@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package card;
+
+option go_package = "github.com/karto4ki/karto4ki-backend/shared/proto/card;card";
+
+import "google/protobuf/timestamp.proto";
+
+// CardService - gRPC сервис для управления наборами и карточками
+service CardService {
+  // Наборы карточек
+  rpc CreateCardSet (CreateCardSetRequest) returns (CreateCardSetResponse);
+  rpc GetCardSet (GetCardSetRequest) returns (GetCardSetResponse);
+  rpc UpdateCardSet (UpdateCardSetRequest) returns (UpdateCardSetResponse);
+  rpc DeleteCardSet (DeleteCardSetRequest) returns (DeleteCardSetResponse);
+  
+  // Карточки
+  rpc CreateCard (CreateCardRequest) returns (CreateCardResponse);
+  rpc GetCard (GetCardRequest) returns (GetCardResponse);
+  rpc UpdateCard (UpdateCardRequest) returns (UpdateCardResponse);
+  rpc DeleteCard (DeleteCardRequest) returns (DeleteCardResponse);
+}
+
+// ========== CardSet ==========
+
+message CardSet {
+  string id = 1;
+  string owner_id = 2;
+  string name = 3;
+  string description = 4;
+  bool is_public = 5;
+  int32 card_count = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message CreateCardSetRequest {
+  string owner_id = 1;
+  string name = 2;
+  string description = 3;
+  bool is_public = 4;
+}
+
+message CreateCardSetResponse {
+  CardSet set = 1;
+}
+
+message GetCardSetRequest {
+  string set_id = 1;
+  string owner_id = 2;
+}
+
+message GetCardSetResponse {
+  CardSet set = 1;
+}
+
+message UpdateCardSetRequest {
+  string set_id = 1;
+  string owner_id = 2;
+  string name = 3;
+  string description = 4;
+  bool is_public = 5;
+}
+
+message UpdateCardSetResponse {
+  CardSet set = 1;
+}
+
+message DeleteCardSetRequest {
+  string set_id = 1;
+  string owner_id = 2;
+}
+
+message DeleteCardSetResponse {
+}
+
+// ========== Card ==========
+
+message Card {
+  string id = 1;
+  string set_id = 2;
+  string front = 3;
+  string back = 4;
+  string image_url = 5;
+  string audio_url = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message CreateCardRequest {
+  string set_id = 1;
+  string front = 2;
+  string back = 3;
+  string image_url = 4;
+  string audio_url = 5;
+}
+
+message CreateCardResponse {
+  Card card = 1;
+}
+
+message GetCardRequest {
+  string card_id = 1;
+}
+
+message GetCardResponse {
+  Card card = 1;
+}
+
+message UpdateCardRequest {
+  string card_id = 1;
+  string front = 2;
+  string back = 3;
+  string image_url = 4;
+  string audio_url = 5;
+}
+
+message UpdateCardResponse {
+  Card card = 1;
+}
+
+message DeleteCardRequest {
+  string card_id = 1;
+}
+
+message DeleteCardResponse {
+}

@@ -16,7 +16,6 @@ func NewAchievementHandler(achievementSvc *services.AchievementService) *Achieve
 	return &AchievementHandler{achievementSvc: achievementSvc}
 }
 
-// GET /me/achievements
 func (h *AchievementHandler) GetMyAchievements(c *gin.Context) {
 	userIDStr := c.GetString("user_id")
 	userID, err := uuid.Parse(userIDStr)

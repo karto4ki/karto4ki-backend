@@ -22,9 +22,9 @@ type StartStudyRequest struct {
 }
 
 type SubmitAnswerRequest struct {
-	CardID      string `json:"card_id" binding:"required"`
-	IsCorrect   bool   `json:"is_correct"`
-	TimeSpentMs int64  `json:"time_spent_ms"`
+	CardID      string             `json:"card_id" binding:"required"`
+	Rating      models.CardRating  `json:"rating" binding:"required"`
+	TimeSpentMs int64              `json:"time_spent_ms"`
 }
 
 func (h *LearningHandler) StartStudySession(c *gin.Context) {
@@ -62,7 +62,7 @@ func (h *LearningHandler) SubmitAnswer(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.SubmitAnswer(c.Request.Context(), sessionID, req.CardID, userID, req.IsCorrect, req.TimeSpentMs)
+	result, err := h.service.SubmitAnswer(c.Request.Context(), sessionID, req.CardID, userID, req.Rating, req.TimeSpentMs)
 	if err == services.ErrNotFound {
 		c.JSON(http.StatusNotFound, gin.H{"error_type": "not_found", "error_message": "Session or card not found"})
 		return
