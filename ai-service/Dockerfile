@@ -1,39 +1,31 @@
-FROM golang:1.26-alpine AS builder
+FROM golang:1.25.0 AS builder
 
 WORKDIR /app
 
-# Install dependencies
-RUN apk add --no-cache git ca-certificates
-
-# Copy go mod files
-COPY ai-service/go.mod ai-service/go.sum ./
-RUN go mod download
-
-# Copy source code
-COPY ai-service/ ./
+COPY shared/go.mod shared/go.sum ./shared/
 COPY shared/ ./shared/
+RUN cd shared && go mod download
 
-# Build
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
+COPY ai-service/go.mod ai-service/go.sum ./ai-service/
+COPY ai-service/ ./ai-service/
+RUN cd ai-service && go mod download
 
-# Final stage
+COPY keys/ ./keys/
+
+WORKDIR /app/ai-service
+
+RUN CGO_ENABLED=0 go build -o ai-service ./cmd/main.go
+
 FROM alpine:latest
 
+RUN apk --no-cache add ca-certificates
+
 WORKDIR /app
 
-# Install CA certificates for HTTPS
-RUN apk --no-cache add ca-certificates tzdata
-
-# Copy binary
-COPY --from=builder /app/main .
-
-# Copy config
-COPY ai-service/config.yml .
-
-# Create non-root user
-RUN adduser -D -g '' appuser
-USER appuser
+COPY --from=builder /app/ai-service/ai-service .
+COPY --from=builder /app/ai-service/config.yml ./config.yml
+COPY --from=builder /app/keys/ ./keys/
 
 EXPOSE 8083
 
-CMD ["./main"]
+CMD ["./ai-service"]
