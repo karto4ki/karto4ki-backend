@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	pb "github.com/karto4ki/karto4ki-backend/user-service/internal/grpc"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/services"
+	"github.com/karto4ki/karto4ki-backend/shared/validator"
 )
 
 type GrpcServer struct {
@@ -69,6 +70,11 @@ func (s *GrpcServer) CreateUserWithEmail(ctx context.Context, req *pb.CreateUser
 	if req.Email == "" || req.Name == "" || req.Username == "" {
 		return &pb.CreateUserResponse{Status: pb.CreateUserStatus_VALIDATION_FAILED}, nil
 	}
+
+	if !validator.ValidateEmail(req.Email) {
+		return &pb.CreateUserResponse{Status: pb.CreateUserStatus_VALIDATION_FAILED}, nil
+	}
+
 	user, err := s.userSvc.CreateUserWithEmail(ctx, req.Email, req.Name, req.Username)
 	if err != nil {
 		if errors.Is(err, services.ErrAlreadyExists) {

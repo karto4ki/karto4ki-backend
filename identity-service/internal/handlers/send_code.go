@@ -9,10 +9,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/karto4ki/karto4ki-backend/identity-service/internal/services"
 	"github.com/karto4ki/karto4ki-backend/shared/restapi"
+	"github.com/karto4ki/karto4ki-backend/shared/validator"
 )
 
 type SendCodeRequest struct {
-	Email string `json:"email"`
+	Email string `json:"email" binding:"required"`
 }
 
 type SendCodeResponse struct {
@@ -29,6 +30,16 @@ func SignInSendCode(service SigninSendCodeService) gin.HandlerFunc {
 		var req SendCodeRequest
 		if err := c.ShouldBindBodyWithJSON(&req); err != nil {
 			restapi.SendUnprocessableJSON(c)
+			return
+		}
+
+		if !validator.ValidateEmail(req.Email) {
+			restapi.SendValidationError(c, []restapi.ErrorDetail{
+				{
+					Field:   "email",
+					Message: "Invalid email format",
+				},
+			})
 			return
 		}
 
