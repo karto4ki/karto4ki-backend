@@ -14,7 +14,7 @@ COPY keys/ ./keys/
 
 WORKDIR /app/card-service
 
-RUN CGO_ENABLED=0 go build -o card-service .cmd//main.go
+RUN CGO_ENABLED=0 go build -o card-service ./cmd/main.go
 
 FROM alpine:latest
 
