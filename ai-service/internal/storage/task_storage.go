@@ -10,13 +10,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// GenerationTaskStorage handles persistence of generation tasks in Redis
 type GenerationTaskStorage struct {
 	client *redis.Client
 	ttl    time.Duration
 }
 
-// NewGenerationTaskStorage creates a new task storage instance
 func NewGenerationTaskStorage(client *redis.Client, ttlHours int) *GenerationTaskStorage {
 	return &GenerationTaskStorage{
 		client: client,
@@ -24,12 +22,10 @@ func NewGenerationTaskStorage(client *redis.Client, ttlHours int) *GenerationTas
 	}
 }
 
-// key generates Redis key for a task
 func (s *GenerationTaskStorage) key(taskID string) string {
 	return fmt.Sprintf("generation_task:%s", taskID)
 }
 
-// CreateTask stores a new generation task in Redis
 func (s *GenerationTaskStorage) CreateTask(ctx context.Context, task *models.GenerationTask) error {
 	data, err := json.Marshal(task)
 	if err != nil {
@@ -40,7 +36,6 @@ func (s *GenerationTaskStorage) CreateTask(ctx context.Context, task *models.Gen
 	return s.client.Set(ctx, key, data, s.ttl).Err()
 }
 
-// GetTask retrieves a generation task from Redis
 func (s *GenerationTaskStorage) GetTask(ctx context.Context, taskID string) (*models.GenerationTask, error) {
 	key := s.key(taskID)
 	data, err := s.client.Get(ctx, key).Bytes()
@@ -59,7 +54,6 @@ func (s *GenerationTaskStorage) GetTask(ctx context.Context, taskID string) (*mo
 	return &task, nil
 }
 
-// UpdateTask updates an existing generation task in Redis
 func (s *GenerationTaskStorage) UpdateTask(ctx context.Context, task *models.GenerationTask) error {
 	task.UpdatedAt = time.Now()
 	data, err := json.Marshal(task)
@@ -71,7 +65,6 @@ func (s *GenerationTaskStorage) UpdateTask(ctx context.Context, task *models.Gen
 	return s.client.Set(ctx, key, data, s.ttl).Err()
 }
 
-// UpdateProgress updates the progress of a generation task
 func (s *GenerationTaskStorage) UpdateProgress(ctx context.Context, taskID string, generatedCards int, status models.TaskStatus) error {
 	task, err := s.GetTask(ctx, taskID)
 	if err != nil {
@@ -90,7 +83,6 @@ func (s *GenerationTaskStorage) UpdateProgress(ctx context.Context, taskID strin
 	return s.UpdateTask(ctx, task)
 }
 
-// CompleteTask marks a task as completed with the resulting set ID
 func (s *GenerationTaskStorage) CompleteTask(ctx context.Context, taskID, setID string) error {
 	task, err := s.GetTask(ctx, taskID)
 	if err != nil {
@@ -110,7 +102,6 @@ func (s *GenerationTaskStorage) CompleteTask(ctx context.Context, taskID, setID 
 	return s.UpdateTask(ctx, task)
 }
 
-// FailTask marks a task as failed with an error message
 func (s *GenerationTaskStorage) FailTask(ctx context.Context, taskID, errMsg string) error {
 	task, err := s.GetTask(ctx, taskID)
 	if err != nil {
@@ -129,7 +120,6 @@ func (s *GenerationTaskStorage) FailTask(ctx context.Context, taskID, errMsg str
 	return s.UpdateTask(ctx, task)
 }
 
-// DeleteTask removes a task from Redis
 func (s *GenerationTaskStorage) DeleteTask(ctx context.Context, taskID string) error {
 	key := s.key(taskID)
 	return s.client.Del(ctx, key).Err()

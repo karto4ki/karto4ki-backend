@@ -113,8 +113,7 @@ func main() {
 	}
 
 	grpcServer := grpcLib.NewServer()
-	pb.RegisterCardServiceServer(grpcServer, grpc.NewCardSetGRPCService(cardSetService))
-	pb.RegisterCardServiceServer(grpcServer, grpc.NewCardGRPCService(cardService))
+	pb.RegisterCardServiceServer(grpcServer, grpc.NewCardGRPCService(cardSetService, cardService))
 
 	go func() {
 		log.Printf("gRPC server listening on :%d", cfg.GRPCPort)

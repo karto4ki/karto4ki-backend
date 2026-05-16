@@ -950,13 +950,24 @@ components:
           type: string
           minLength: 1
           maxLength: 1000
+          description: Front side of the card (term/question)
         back:
           type: string
           minLength: 1
           maxLength: 2000
+          description: Back side of the card (definition/answer)
         image_url:
           type: string
           nullable: true
+          description: |
+            URL of the card image. To upload an image:
+            1. POST /api/storage/v1.0/upload with type=card_image
+            2. Use the returned file_url in this field
+          example: "http://minio:9000/karto4ki-files/card_images/uuid-filename.jpg"
+        audio_url:
+          type: string
+          nullable: true
+          description: URL of the audio pronunciation (for audio learning mode)
     UpdateCardRequest:
       type: object
       properties:
@@ -971,6 +982,14 @@ components:
         image_url:
           type: string
           nullable: true
+          description: |
+            URL of the card image. To upload an image:
+            1. POST /api/storage/v1.0/upload with type=card_image
+            2. Use the returned file_url in this field
+        audio_url:
+          type: string
+          nullable: true
+          description: URL of the audio pronunciation
     CardSetsResponse:
       type: object
       properties:

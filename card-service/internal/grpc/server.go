@@ -10,24 +10,26 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type CardSetGRPCService struct {
+type CardGRPCService struct {
 	pb.UnimplementedCardServiceServer
-	service *services.CardSetService
+	cardSetService *services.CardSetService
+	cardService    *services.CardService
 }
 
-func NewCardSetGRPCService(service *services.CardSetService) *CardSetGRPCService {
-	return &CardSetGRPCService{
-		service: service,
+func NewCardGRPCService(cardSetService *services.CardSetService, cardService *services.CardService) *CardGRPCService {
+	return &CardGRPCService{
+		cardSetService: cardSetService,
+		cardService:    cardService,
 	}
 }
 
-func (s *CardSetGRPCService) CreateCardSet(ctx context.Context, req *pb.CreateCardSetRequest) (*pb.CreateCardSetResponse, error) {
+func (s *CardGRPCService) CreateCardSet(ctx context.Context, req *pb.CreateCardSetRequest) (*pb.CreateCardSetResponse, error) {
 	var description *string
 	if req.Description != "" {
 		description = &req.Description
 	}
 
-	set, err := s.service.CreateCardSet(ctx, req.OwnerId, req.Name, description, req.IsPublic)
+	set, err := s.cardSetService.CreateCardSet(ctx, req.OwnerId, req.Name, description, req.IsPublic)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create card set: %v", err)
 	}
@@ -50,8 +52,8 @@ func (s *CardSetGRPCService) CreateCardSet(ctx context.Context, req *pb.CreateCa
 	}, nil
 }
 
-func (s *CardSetGRPCService) GetCardSet(ctx context.Context, req *pb.GetCardSetRequest) (*pb.GetCardSetResponse, error) {
-	set, err := s.service.GetCardSet(ctx, req.SetId, req.OwnerId)
+func (s *CardGRPCService) GetCardSet(ctx context.Context, req *pb.GetCardSetRequest) (*pb.GetCardSetResponse, error) {
+	set, err := s.cardSetService.GetCardSet(ctx, req.SetId, req.OwnerId)
 	if err != nil {
 		if err == services.ErrNotFound {
 			return nil, status.Errorf(codes.NotFound, "card set not found")
@@ -80,13 +82,13 @@ func (s *CardSetGRPCService) GetCardSet(ctx context.Context, req *pb.GetCardSetR
 	}, nil
 }
 
-func (s *CardSetGRPCService) UpdateCardSet(ctx context.Context, req *pb.UpdateCardSetRequest) (*pb.UpdateCardSetResponse, error) {
+func (s *CardGRPCService) UpdateCardSet(ctx context.Context, req *pb.UpdateCardSetRequest) (*pb.UpdateCardSetResponse, error) {
 	var description *string
 	if req.Description != "" {
 		description = &req.Description
 	}
 
-	set, err := s.service.UpdateCardSet(ctx, req.SetId, req.OwnerId, req.Name, description, req.IsPublic)
+	set, err := s.cardSetService.UpdateCardSet(ctx, req.SetId, req.OwnerId, req.Name, description, req.IsPublic)
 	if err != nil {
 		if err == services.ErrNotFound {
 			return nil, status.Errorf(codes.NotFound, "card set not found")
@@ -115,8 +117,8 @@ func (s *CardSetGRPCService) UpdateCardSet(ctx context.Context, req *pb.UpdateCa
 	}, nil
 }
 
-func (s *CardSetGRPCService) DeleteCardSet(ctx context.Context, req *pb.DeleteCardSetRequest) (*pb.DeleteCardSetResponse, error) {
-	err := s.service.DeleteCardSet(ctx, req.SetId, req.OwnerId)
+func (s *CardGRPCService) DeleteCardSet(ctx context.Context, req *pb.DeleteCardSetRequest) (*pb.DeleteCardSetResponse, error) {
+	err := s.cardSetService.DeleteCardSet(ctx, req.SetId, req.OwnerId)
 	if err != nil {
 		if err == services.ErrNotFound {
 			return nil, status.Errorf(codes.NotFound, "card set not found")
@@ -130,17 +132,6 @@ func (s *CardSetGRPCService) DeleteCardSet(ctx context.Context, req *pb.DeleteCa
 	return &pb.DeleteCardSetResponse{}, nil
 }
 
-type CardGRPCService struct {
-	pb.UnimplementedCardServiceServer
-	service *services.CardService
-}
-
-func NewCardGRPCService(service *services.CardService) *CardGRPCService {
-	return &CardGRPCService{
-		service: service,
-	}
-}
-
 func (s *CardGRPCService) CreateCard(ctx context.Context, req *pb.CreateCardRequest) (*pb.CreateCardResponse, error) {
 	var imageURL, audioURL *string
 	if req.ImageUrl != "" {
@@ -150,7 +141,7 @@ func (s *CardGRPCService) CreateCard(ctx context.Context, req *pb.CreateCardRequ
 		audioURL = &req.AudioUrl
 	}
 
-	card, err := s.service.CreateCard(ctx, req.SetId, req.Front, req.Back, imageURL, audioURL)
+	card, err := s.cardService.CreateCard(ctx, req.SetId, req.Front, req.Back, imageURL, audioURL)
 	if err != nil {
 		if err == services.ErrNotFound {
 			return nil, status.Errorf(codes.NotFound, "card set not found")
@@ -181,7 +172,7 @@ func (s *CardGRPCService) CreateCard(ctx context.Context, req *pb.CreateCardRequ
 }
 
 func (s *CardGRPCService) GetCard(ctx context.Context, req *pb.GetCardRequest) (*pb.GetCardResponse, error) {
-	card, err := s.service.GetCard(ctx, req.CardId, "")
+	card, err := s.cardService.GetCard(ctx, req.CardId, "")
 	if err != nil {
 		if err == services.ErrNotFound {
 			return nil, status.Errorf(codes.NotFound, "card not found")
@@ -220,7 +211,7 @@ func (s *CardGRPCService) UpdateCard(ctx context.Context, req *pb.UpdateCardRequ
 		audioURL = &req.AudioUrl
 	}
 
-	card, err := s.service.UpdateCard(ctx, req.CardId, "", req.Front, req.Back, imageURL, audioURL)
+	card, err := s.cardService.UpdateCard(ctx, req.CardId, "", req.Front, req.Back, imageURL, audioURL)
 	if err != nil {
 		if err == services.ErrNotFound {
 			return nil, status.Errorf(codes.NotFound, "card not found")
@@ -254,7 +245,7 @@ func (s *CardGRPCService) UpdateCard(ctx context.Context, req *pb.UpdateCardRequ
 }
 
 func (s *CardGRPCService) DeleteCard(ctx context.Context, req *pb.DeleteCardRequest) (*pb.DeleteCardResponse, error) {
-	err := s.service.DeleteCard(ctx, req.CardId, "")
+	err := s.cardService.DeleteCard(ctx, req.CardId, "")
 	if err != nil {
 		if err == services.ErrNotFound {
 			return nil, status.Errorf(codes.NotFound, "card not found")

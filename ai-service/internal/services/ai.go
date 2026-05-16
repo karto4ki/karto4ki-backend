@@ -65,7 +65,6 @@ type SummarizeResponse struct {
 	Summary string `json:"summary"`
 }
 
-// GenerateCardsAsync starts an async card generation task and returns task ID
 func (s *AIService) GenerateCardsAsync(ctx context.Context, userID string, req GenerateCardsRequest) (string, error) {
 	if req.CardCount <= 0 {
 		req.CardCount = 5
@@ -104,7 +103,6 @@ func (s *AIService) GenerateCardsAsync(ctx context.Context, userID string, req G
 	return taskID, nil
 }
 
-// processGeneration handles the actual card generation in background
 func (s *AIService) processGeneration(ctx context.Context, taskID string, req GenerateCardsRequest, userID string) {
 	// Update status to processing
 	if err := s.taskStorage.UpdateProgress(ctx, taskID, 0, models.TaskStatusProcessing); err != nil {
@@ -151,7 +149,6 @@ func (s *AIService) processGeneration(ctx context.Context, taskID string, req Ge
 	}
 }
 
-// GetGenerationTask retrieves the current state of a generation task
 func (s *AIService) GetGenerationTask(ctx context.Context, taskID string) (*models.GenerationTask, error) {
 	task, err := s.taskStorage.GetTask(ctx, taskID)
 	if err != nil {
@@ -163,7 +160,6 @@ func (s *AIService) GetGenerationTask(ctx context.Context, taskID string) (*mode
 	return task, nil
 }
 
-// GenerateCards generates cards synchronously (legacy, kept for backward compatibility)
 func (s *AIService) GenerateCards(ctx context.Context, userID string, req GenerateCardsRequest) (*GenerateCardsResponse, error) {
 	if req.CardCount <= 0 {
 		req.CardCount = 5
