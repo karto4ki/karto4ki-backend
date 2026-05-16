@@ -41,7 +41,7 @@ func NewAppleAuthService(accessConf, refreshConf *jwt.Config, userClient userser
 }
 
 func (s *AppleAuthService) Authenticate(ctx context.Context, idToken string, userData *AppleUserData) (jwt.Pair, error) {
-	info, err := oauth.VerifyAppleIDToken(ctx, idToken, s.appleClientID)
+	info, err := oauth.VerifyAppleIDTokenFunc(ctx, idToken, s.appleClientID)
 	if err != nil {
 		return jwt.Pair{}, fmt.Errorf("%w: %v", ErrInvalidAppleToken, err)
 	}
