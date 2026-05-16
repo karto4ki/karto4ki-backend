@@ -19,16 +19,18 @@ var (
 )
 
 type CardSetService struct {
-	setStorage  storage.CardSetStorage
-	cardStorage storage.CardStorage
-	userClient  *userclient.Client
+	setStorage   storage.CardSetStorage
+	cardStorage  storage.CardStorage
+	statsStorage storage.StatisticsStorage
+	userClient   *userclient.Client
 }
 
-func NewCardSetService(setStorage storage.CardSetStorage, cardStorage storage.CardStorage, userClient *userclient.Client) *CardSetService {
+func NewCardSetService(setStorage storage.CardSetStorage, cardStorage storage.CardStorage, statsStorage storage.StatisticsStorage, userClient *userclient.Client) *CardSetService {
 	return &CardSetService{
-		setStorage:  setStorage,
-		cardStorage: cardStorage,
-		userClient:  userClient,
+		setStorage:   setStorage,
+		cardStorage:  cardStorage,
+		statsStorage: statsStorage,
+		userClient:   userClient,
 	}
 }
 
@@ -61,6 +63,14 @@ func (s *CardSetService) GetCardSet(ctx context.Context, id, userID string) (*mo
 
 	count, _ := s.cardStorage.GetCountBySet(ctx, id)
 	set.CardCount = count
+
+	stats, err := s.statsStorage.GetSetStatistics(ctx, id)
+	if err == nil {
+		set.LearnedCount = stats.LearnedCards
+		if stats.TotalCards > 0 {
+			set.MasteryPercentage = stats.MasteryPercentage
+		}
+	}
 
 	if ownerInfo, err := s.userClient.GetPublicProfile(ctx, set.OwnerID); err == nil && ownerInfo != nil {
 		set.Author = &models.AuthorInfo{
@@ -462,10 +472,10 @@ func CalculateSpacedRepetition(currentStatus models.CardStatus, errorCount int32
 }
 
 type AnswerResult struct {
-	CardID     string
-	NewStatus  models.CardStatus
-	NextReview time.Time
-	Streak     int32
-	ErrorCount int32
-	LastRating models.CardRating
+	CardID     string            `json:"card_id"`
+	NewStatus  models.CardStatus `json:"new_status"`
+	NextReview time.Time         `json:"next_review"`
+	Streak     int32             `json:"streak"`
+	ErrorCount int32             `json:"error_count"`
+	LastRating models.CardRating `json:"last_rating"`
 }
