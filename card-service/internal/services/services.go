@@ -462,10 +462,10 @@ func CalculateSpacedRepetition(currentStatus models.CardStatus, errorCount int32
 }
 
 type AnswerResult struct {
-	CardID     string
-	NewStatus  models.CardStatus
-	NextReview time.Time
-	Streak     int32
-	ErrorCount int32
-	LastRating models.CardRating
+	CardID     string            `json:"card_id"`
+	NewStatus  models.CardStatus `json:"new_status"`
+	NextReview time.Time         `json:"next_review"`
+	Streak     int32             `json:"streak"`
+	ErrorCount int32             `json:"error_count"`
+	LastRating models.CardRating `json:"last_rating"`
 }
