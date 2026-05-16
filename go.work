@@ -1,9 +1,0 @@
-go 1.26.2
-use (
-	./ai-service
-	./card-service
-	./filestorage-service
-	./identity-service
-	./shared
-	./user-service
-)

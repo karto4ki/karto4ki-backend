@@ -59,7 +59,6 @@ func main() {
 	}
 	gs := grpc.NewServer()
 	pb.RegisterUserServiceServer(gs, grpcServer)
-	pb.RegisterCardServiceServer(gs, grpcServer)
 
 	go func() {
 		log.Printf("gRPC server listening on :%d", cfg.GRPCPort)

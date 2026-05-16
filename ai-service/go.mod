@@ -1,6 +1,6 @@
 module github.com/karto4ki/karto4ki-backend/ai-service
 
-go 1.25.0
+go 1.25.1
 
 require (
 	github.com/gin-gonic/gin v1.12.0

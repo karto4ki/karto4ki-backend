@@ -19,10 +19,10 @@ import (
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/services"
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/storage"
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/userclient"
-	pb "github.com/karto4ki/karto4ki-backend/shared/proto/card"
 	"github.com/karto4ki/karto4ki-backend/shared/auth"
 	"github.com/karto4ki/karto4ki-backend/shared/jwt"
 	"github.com/karto4ki/karto4ki-backend/shared/postgres"
+	pb "github.com/karto4ki/karto4ki-backend/shared/proto/card"
 	_ "github.com/lib/pq"
 	grpcLib "google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
@@ -50,7 +50,8 @@ func main() {
 
 	jwtConf := loadJWTConfig(cfg.JWT)
 	authMiddleware := auth.NewJWT(&auth.JWTConfig{
-		Conf: jwtConf,
+		Conf:          jwtConf,
+		DefaultHeader: "X-Internal-Token",
 	})
 
 	r := gin.Default()

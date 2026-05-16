@@ -267,7 +267,7 @@ components:
           example: "Квантовая механика — раздел физики, изучающий квантовые системы..."
         card_count:
           type: integer
-          description: Number of cards to generate (default: 5)
+          description: "Number of cards to generate (default: 5)"
           minimum: 1
           maximum: 150
           default: 5
@@ -305,7 +305,7 @@ components:
           description: PDF file to extract text from (max 10MB)
         card_count:
           type: integer
-          description: Number of cards to generate (default: 5)
+          description: "Number of cards to generate (default: 5)"
           minimum: 1
           maximum: 150
           default: 5
