@@ -23,7 +23,7 @@ type StartStudyRequest struct {
 
 type SubmitAnswerRequest struct {
 	CardID      string             `json:"card_id" binding:"required"`
-	Rating      models.CardRating  `json:"rating" binding:"required"`
+	Rating      models.CardRating  `json:"rating" binding:"oneof=0 1"`
 	TimeSpentMs int64              `json:"time_spent_ms"`
 }
 
