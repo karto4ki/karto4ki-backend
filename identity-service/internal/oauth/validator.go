@@ -3,9 +3,14 @@ package oauth
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"sync"
+	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 )
+
+var oidcHTTPClient = &http.Client{Timeout: 10 * time.Second}
 
 type GoogleTokenInfo struct {
 	Sub           string `json:"sub"`
@@ -21,8 +26,34 @@ var (
 	VerifyAppleIDTokenFunc  = VerifyAppleIDToken
 )
 
+type providerCache struct {
+	mu       sync.Mutex
+	provider *oidc.Provider
+}
+
+func (c *providerCache) get(ctx context.Context, issuer string) (*oidc.Provider, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.provider != nil {
+		return c.provider, nil
+	}
+	fetchCtx := oidc.ClientContext(ctx, oidcHTTPClient)
+	p, err := oidc.NewProvider(fetchCtx, issuer)
+	if err != nil {
+		return nil, err
+	}
+	c.provider = p
+	return p, nil
+}
+
+var (
+	googleProviderCache = &providerCache{}
+	appleProviderCache  = &providerCache{}
+)
+
 func VerifyGoogleIDToken(ctx context.Context, idToken, clientID string) (*GoogleTokenInfo, error) {
-	provider, err := oidc.NewProvider(ctx, "https://accounts.google.com")
+	ctx = oidc.ClientContext(ctx, oidcHTTPClient)
+	provider, err := googleProviderCache.get(ctx, "https://accounts.google.com")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Google OIDC provider: %w", err)
 	}
@@ -48,12 +79,12 @@ func VerifyGoogleIDToken(ctx context.Context, idToken, clientID string) (*Google
 type AppleTokenClaims struct {
 	Sub            string `json:"sub"`
 	Email          string `json:"email"`
-	EmailVerified  string `json:"email_verified"`
 	IsPrivateEmail bool   `json:"is_private_email"`
 }
 
 func VerifyAppleIDToken(ctx context.Context, idToken, clientID string) (*AppleTokenClaims, error) {
-	provider, err := oidc.NewProvider(ctx, "https://appleid.apple.com")
+	ctx = oidc.ClientContext(ctx, oidcHTTPClient)
+	provider, err := appleProviderCache.get(ctx, "https://appleid.apple.com")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Apple OIDC provider: %w", err)
 	}
