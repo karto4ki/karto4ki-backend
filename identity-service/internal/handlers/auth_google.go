@@ -35,6 +35,11 @@ func GoogleAuth(service GoogleAuthService) gin.HandlerFunc {
 					ErrorType:    restapi.ErrTypeInvalidGoogleToken,
 					ErrorMessage: "Invalid Google ID token",
 				})
+			case errors.Is(err, services.ErrProviderAlreadyLinked):
+				c.JSON(http.StatusConflict, restapi.ErrorResponse{
+					ErrorType:    restapi.ErrTypeProviderAlreadyLinked,
+					ErrorMessage: "This Google account is already linked to another user",
+				})
 			case errors.Is(err, services.ErrUserServiceUnavailable),
 				errors.Is(err, services.ErrUserCreationFailed),
 				errors.Is(err, services.ErrUnexpectedUserServiceStatus):
