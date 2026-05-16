@@ -248,8 +248,8 @@ func (s *GrpcServer) SearchUsers(ctx context.Context, req *pb.SearchUsersRequest
 
 	searchReq := storage.SearchUsersRequest{
 		Query:  req.Query,
-		Limit:  req.Limit,
-		Offset: req.Offset,
+		Limit:  int(req.Limit),
+		Offset: int(req.Offset),
 	}
 
 	result, err := s.userSvc.SearchUsers(ctx, searchReq)

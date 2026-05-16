@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.1
-// source: user.proto
+// source: api/user-service/user.proto
 
 package userservice
 
@@ -57,11 +57,11 @@ func (x RemoveProviderFromUserStatus) String() string {
 }
 
 func (RemoveProviderFromUserStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[0].Descriptor()
+	return file_api_user_service_user_proto_enumTypes[0].Descriptor()
 }
 
 func (RemoveProviderFromUserStatus) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[0]
+	return &file_api_user_service_user_proto_enumTypes[0]
 }
 
 func (x RemoveProviderFromUserStatus) Number() protoreflect.EnumNumber {
@@ -70,7 +70,7 @@ func (x RemoveProviderFromUserStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RemoveProviderFromUserStatus.Descriptor instead.
 func (RemoveProviderFromUserStatus) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{0}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{0}
 }
 
 type GetUserProvidersStatus int32
@@ -109,11 +109,11 @@ func (x GetUserProvidersStatus) String() string {
 }
 
 func (GetUserProvidersStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[1].Descriptor()
+	return file_api_user_service_user_proto_enumTypes[1].Descriptor()
 }
 
 func (GetUserProvidersStatus) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[1]
+	return &file_api_user_service_user_proto_enumTypes[1]
 }
 
 func (x GetUserProvidersStatus) Number() protoreflect.EnumNumber {
@@ -122,7 +122,7 @@ func (x GetUserProvidersStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GetUserProvidersStatus.Descriptor instead.
 func (GetUserProvidersStatus) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{1}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{1}
 }
 
 type AddProviderToUserStatus int32
@@ -158,11 +158,11 @@ func (x AddProviderToUserStatus) String() string {
 }
 
 func (AddProviderToUserStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[2].Descriptor()
+	return file_api_user_service_user_proto_enumTypes[2].Descriptor()
 }
 
 func (AddProviderToUserStatus) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[2]
+	return &file_api_user_service_user_proto_enumTypes[2]
 }
 
 func (x AddProviderToUserStatus) Number() protoreflect.EnumNumber {
@@ -171,7 +171,7 @@ func (x AddProviderToUserStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AddProviderToUserStatus.Descriptor instead.
 func (AddProviderToUserStatus) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{2}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{2}
 }
 
 type CreateUserStatus int32
@@ -210,11 +210,11 @@ func (x CreateUserStatus) String() string {
 }
 
 func (CreateUserStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[3].Descriptor()
+	return file_api_user_service_user_proto_enumTypes[3].Descriptor()
 }
 
 func (CreateUserStatus) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[3]
+	return &file_api_user_service_user_proto_enumTypes[3]
 }
 
 func (x CreateUserStatus) Number() protoreflect.EnumNumber {
@@ -223,7 +223,7 @@ func (x CreateUserStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CreateUserStatus.Descriptor instead.
 func (CreateUserStatus) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{3}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{3}
 }
 
 type GetUserResponseStatus int32
@@ -259,11 +259,11 @@ func (x GetUserResponseStatus) String() string {
 }
 
 func (GetUserResponseStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[4].Descriptor()
+	return file_api_user_service_user_proto_enumTypes[4].Descriptor()
 }
 
 func (GetUserResponseStatus) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[4]
+	return &file_api_user_service_user_proto_enumTypes[4]
 }
 
 func (x GetUserResponseStatus) Number() protoreflect.EnumNumber {
@@ -272,7 +272,7 @@ func (x GetUserResponseStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GetUserResponseStatus.Descriptor instead.
 func (GetUserResponseStatus) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{4}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{4}
 }
 
 type CopyCardSetStatus int32
@@ -311,11 +311,11 @@ func (x CopyCardSetStatus) String() string {
 }
 
 func (CopyCardSetStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[5].Descriptor()
+	return file_api_user_service_user_proto_enumTypes[5].Descriptor()
 }
 
 func (CopyCardSetStatus) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[5]
+	return &file_api_user_service_user_proto_enumTypes[5]
 }
 
 func (x CopyCardSetStatus) Number() protoreflect.EnumNumber {
@@ -324,7 +324,7 @@ func (x CopyCardSetStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CopyCardSetStatus.Descriptor instead.
 func (CopyCardSetStatus) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{5}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{5}
 }
 
 type GetUserByEmailRequest struct {
@@ -336,7 +336,7 @@ type GetUserByEmailRequest struct {
 
 func (x *GetUserByEmailRequest) Reset() {
 	*x = GetUserByEmailRequest{}
-	mi := &file_user_proto_msgTypes[0]
+	mi := &file_api_user_service_user_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -348,7 +348,7 @@ func (x *GetUserByEmailRequest) String() string {
 func (*GetUserByEmailRequest) ProtoMessage() {}
 
 func (x *GetUserByEmailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[0]
+	mi := &file_api_user_service_user_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -361,7 +361,7 @@ func (x *GetUserByEmailRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserByEmailRequest.ProtoReflect.Descriptor instead.
 func (*GetUserByEmailRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{0}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetUserByEmailRequest) GetEmail() string {
@@ -381,7 +381,7 @@ type GetUserByProviderRequest struct {
 
 func (x *GetUserByProviderRequest) Reset() {
 	*x = GetUserByProviderRequest{}
-	mi := &file_user_proto_msgTypes[1]
+	mi := &file_api_user_service_user_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -393,7 +393,7 @@ func (x *GetUserByProviderRequest) String() string {
 func (*GetUserByProviderRequest) ProtoMessage() {}
 
 func (x *GetUserByProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[1]
+	mi := &file_api_user_service_user_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -406,7 +406,7 @@ func (x *GetUserByProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserByProviderRequest.ProtoReflect.Descriptor instead.
 func (*GetUserByProviderRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{1}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetUserByProviderRequest) GetProvider() string {
@@ -434,7 +434,7 @@ type CreateUserWithEmailRequest struct {
 
 func (x *CreateUserWithEmailRequest) Reset() {
 	*x = CreateUserWithEmailRequest{}
-	mi := &file_user_proto_msgTypes[2]
+	mi := &file_api_user_service_user_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -446,7 +446,7 @@ func (x *CreateUserWithEmailRequest) String() string {
 func (*CreateUserWithEmailRequest) ProtoMessage() {}
 
 func (x *CreateUserWithEmailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[2]
+	mi := &file_api_user_service_user_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -459,7 +459,7 @@ func (x *CreateUserWithEmailRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserWithEmailRequest.ProtoReflect.Descriptor instead.
 func (*CreateUserWithEmailRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{2}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CreateUserWithEmailRequest) GetEmail() string {
@@ -495,7 +495,7 @@ type CreateUserWithProviderRequest struct {
 
 func (x *CreateUserWithProviderRequest) Reset() {
 	*x = CreateUserWithProviderRequest{}
-	mi := &file_user_proto_msgTypes[3]
+	mi := &file_api_user_service_user_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -507,7 +507,7 @@ func (x *CreateUserWithProviderRequest) String() string {
 func (*CreateUserWithProviderRequest) ProtoMessage() {}
 
 func (x *CreateUserWithProviderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[3]
+	mi := &file_api_user_service_user_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -520,7 +520,7 @@ func (x *CreateUserWithProviderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserWithProviderRequest.ProtoReflect.Descriptor instead.
 func (*CreateUserWithProviderRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{3}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateUserWithProviderRequest) GetProvider() string {
@@ -562,7 +562,7 @@ type AddProviderToUserRequest struct {
 
 func (x *AddProviderToUserRequest) Reset() {
 	*x = AddProviderToUserRequest{}
-	mi := &file_user_proto_msgTypes[4]
+	mi := &file_api_user_service_user_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -574,7 +574,7 @@ func (x *AddProviderToUserRequest) String() string {
 func (*AddProviderToUserRequest) ProtoMessage() {}
 
 func (x *AddProviderToUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[4]
+	mi := &file_api_user_service_user_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -587,7 +587,7 @@ func (x *AddProviderToUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddProviderToUserRequest.ProtoReflect.Descriptor instead.
 func (*AddProviderToUserRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{4}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AddProviderToUserRequest) GetUserId() *UUID {
@@ -620,7 +620,7 @@ type AddProviderToUserResponse struct {
 
 func (x *AddProviderToUserResponse) Reset() {
 	*x = AddProviderToUserResponse{}
-	mi := &file_user_proto_msgTypes[5]
+	mi := &file_api_user_service_user_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -632,7 +632,7 @@ func (x *AddProviderToUserResponse) String() string {
 func (*AddProviderToUserResponse) ProtoMessage() {}
 
 func (x *AddProviderToUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[5]
+	mi := &file_api_user_service_user_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -645,7 +645,7 @@ func (x *AddProviderToUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddProviderToUserResponse.ProtoReflect.Descriptor instead.
 func (*AddProviderToUserResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{5}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *AddProviderToUserResponse) GetStatus() AddProviderToUserStatus {
@@ -665,7 +665,7 @@ type RemoveProviderFromUserRequest struct {
 
 func (x *RemoveProviderFromUserRequest) Reset() {
 	*x = RemoveProviderFromUserRequest{}
-	mi := &file_user_proto_msgTypes[6]
+	mi := &file_api_user_service_user_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -677,7 +677,7 @@ func (x *RemoveProviderFromUserRequest) String() string {
 func (*RemoveProviderFromUserRequest) ProtoMessage() {}
 
 func (x *RemoveProviderFromUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[6]
+	mi := &file_api_user_service_user_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -690,7 +690,7 @@ func (x *RemoveProviderFromUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveProviderFromUserRequest.ProtoReflect.Descriptor instead.
 func (*RemoveProviderFromUserRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{6}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *RemoveProviderFromUserRequest) GetUserId() *UUID {
@@ -716,7 +716,7 @@ type RemoveProviderFromUserResponse struct {
 
 func (x *RemoveProviderFromUserResponse) Reset() {
 	*x = RemoveProviderFromUserResponse{}
-	mi := &file_user_proto_msgTypes[7]
+	mi := &file_api_user_service_user_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -728,7 +728,7 @@ func (x *RemoveProviderFromUserResponse) String() string {
 func (*RemoveProviderFromUserResponse) ProtoMessage() {}
 
 func (x *RemoveProviderFromUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[7]
+	mi := &file_api_user_service_user_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -741,7 +741,7 @@ func (x *RemoveProviderFromUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveProviderFromUserResponse.ProtoReflect.Descriptor instead.
 func (*RemoveProviderFromUserResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{7}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *RemoveProviderFromUserResponse) GetStatus() RemoveProviderFromUserStatus {
@@ -760,7 +760,7 @@ type GetUserProvidersRequest struct {
 
 func (x *GetUserProvidersRequest) Reset() {
 	*x = GetUserProvidersRequest{}
-	mi := &file_user_proto_msgTypes[8]
+	mi := &file_api_user_service_user_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -772,7 +772,7 @@ func (x *GetUserProvidersRequest) String() string {
 func (*GetUserProvidersRequest) ProtoMessage() {}
 
 func (x *GetUserProvidersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[8]
+	mi := &file_api_user_service_user_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -785,7 +785,7 @@ func (x *GetUserProvidersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserProvidersRequest.ProtoReflect.Descriptor instead.
 func (*GetUserProvidersRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{8}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetUserProvidersRequest) GetUserId() *UUID {
@@ -805,7 +805,7 @@ type GetUserProvidersResponse struct {
 
 func (x *GetUserProvidersResponse) Reset() {
 	*x = GetUserProvidersResponse{}
-	mi := &file_user_proto_msgTypes[9]
+	mi := &file_api_user_service_user_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -817,7 +817,7 @@ func (x *GetUserProvidersResponse) String() string {
 func (*GetUserProvidersResponse) ProtoMessage() {}
 
 func (x *GetUserProvidersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[9]
+	mi := &file_api_user_service_user_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -830,7 +830,7 @@ func (x *GetUserProvidersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserProvidersResponse.ProtoReflect.Descriptor instead.
 func (*GetUserProvidersResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{9}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetUserProvidersResponse) GetStatus() GetUserProvidersStatus {
@@ -857,7 +857,7 @@ type UpdateUserAchievementsRequest struct {
 
 func (x *UpdateUserAchievementsRequest) Reset() {
 	*x = UpdateUserAchievementsRequest{}
-	mi := &file_user_proto_msgTypes[10]
+	mi := &file_api_user_service_user_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -869,7 +869,7 @@ func (x *UpdateUserAchievementsRequest) String() string {
 func (*UpdateUserAchievementsRequest) ProtoMessage() {}
 
 func (x *UpdateUserAchievementsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[10]
+	mi := &file_api_user_service_user_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -882,7 +882,7 @@ func (x *UpdateUserAchievementsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserAchievementsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateUserAchievementsRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{10}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UpdateUserAchievementsRequest) GetUserId() *UUID {
@@ -908,7 +908,7 @@ type UUID struct {
 
 func (x *UUID) Reset() {
 	*x = UUID{}
-	mi := &file_user_proto_msgTypes[11]
+	mi := &file_api_user_service_user_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -920,7 +920,7 @@ func (x *UUID) String() string {
 func (*UUID) ProtoMessage() {}
 
 func (x *UUID) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[11]
+	mi := &file_api_user_service_user_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -933,7 +933,7 @@ func (x *UUID) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UUID.ProtoReflect.Descriptor instead.
 func (*UUID) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{11}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *UUID) GetValue() string {
@@ -956,7 +956,7 @@ type OAuthProvider struct {
 
 func (x *OAuthProvider) Reset() {
 	*x = OAuthProvider{}
-	mi := &file_user_proto_msgTypes[12]
+	mi := &file_api_user_service_user_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -968,7 +968,7 @@ func (x *OAuthProvider) String() string {
 func (*OAuthProvider) ProtoMessage() {}
 
 func (x *OAuthProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[12]
+	mi := &file_api_user_service_user_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -981,7 +981,7 @@ func (x *OAuthProvider) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OAuthProvider.ProtoReflect.Descriptor instead.
 func (*OAuthProvider) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{12}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *OAuthProvider) GetId() string {
@@ -1025,14 +1025,15 @@ type GetUserResponse struct {
 	Name          *string                `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Username      *string                `protobuf:"bytes,3,opt,name=username,proto3,oneof" json:"username,omitempty"`
 	UserId        *UUID                  `protobuf:"bytes,4,opt,name=userId,proto3,oneof" json:"userId,omitempty"`
-	Providers     []*OAuthProvider       `protobuf:"bytes,5,rep,name=providers,proto3" json:"providers,omitempty"` // Список всех провайдеров пользователя
+	PhotoUrl      *string                `protobuf:"bytes,6,opt,name=photo_url,json=photoUrl,proto3,oneof" json:"photo_url,omitempty"` // URL аватарки
+	Providers     []*OAuthProvider       `protobuf:"bytes,5,rep,name=providers,proto3" json:"providers,omitempty"`                     // Список всех провайдеров пользователя
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetUserResponse) Reset() {
 	*x = GetUserResponse{}
-	mi := &file_user_proto_msgTypes[13]
+	mi := &file_api_user_service_user_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1044,7 +1045,7 @@ func (x *GetUserResponse) String() string {
 func (*GetUserResponse) ProtoMessage() {}
 
 func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[13]
+	mi := &file_api_user_service_user_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1057,7 +1058,7 @@ func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserResponse.ProtoReflect.Descriptor instead.
 func (*GetUserResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{13}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetUserResponse) GetStatus() GetUserResponseStatus {
@@ -1088,6 +1089,13 @@ func (x *GetUserResponse) GetUserId() *UUID {
 	return nil
 }
 
+func (x *GetUserResponse) GetPhotoUrl() string {
+	if x != nil && x.PhotoUrl != nil {
+		return *x.PhotoUrl
+	}
+	return ""
+}
+
 func (x *GetUserResponse) GetProviders() []*OAuthProvider {
 	if x != nil {
 		return x.Providers
@@ -1107,7 +1115,7 @@ type CreateUserResponse struct {
 
 func (x *CreateUserResponse) Reset() {
 	*x = CreateUserResponse{}
-	mi := &file_user_proto_msgTypes[14]
+	mi := &file_api_user_service_user_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1119,7 +1127,7 @@ func (x *CreateUserResponse) String() string {
 func (*CreateUserResponse) ProtoMessage() {}
 
 func (x *CreateUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[14]
+	mi := &file_api_user_service_user_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1132,7 +1140,7 @@ func (x *CreateUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateUserResponse.ProtoReflect.Descriptor instead.
 func (*CreateUserResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{14}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CreateUserResponse) GetStatus() CreateUserStatus {
@@ -1172,7 +1180,7 @@ type UpdateUserAchievementsResponse struct {
 
 func (x *UpdateUserAchievementsResponse) Reset() {
 	*x = UpdateUserAchievementsResponse{}
-	mi := &file_user_proto_msgTypes[15]
+	mi := &file_api_user_service_user_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1184,7 +1192,7 @@ func (x *UpdateUserAchievementsResponse) String() string {
 func (*UpdateUserAchievementsResponse) ProtoMessage() {}
 
 func (x *UpdateUserAchievementsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[15]
+	mi := &file_api_user_service_user_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1197,7 +1205,7 @@ func (x *UpdateUserAchievementsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateUserAchievementsResponse.ProtoReflect.Descriptor instead.
 func (*UpdateUserAchievementsResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{15}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UpdateUserAchievementsResponse) GetStatus() GetUserResponseStatus {
@@ -1218,7 +1226,7 @@ type SearchUsersRequest struct {
 
 func (x *SearchUsersRequest) Reset() {
 	*x = SearchUsersRequest{}
-	mi := &file_user_proto_msgTypes[16]
+	mi := &file_api_user_service_user_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1230,7 +1238,7 @@ func (x *SearchUsersRequest) String() string {
 func (*SearchUsersRequest) ProtoMessage() {}
 
 func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[16]
+	mi := &file_api_user_service_user_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1243,7 +1251,7 @@ func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchUsersRequest.ProtoReflect.Descriptor instead.
 func (*SearchUsersRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{16}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SearchUsersRequest) GetQuery() string {
@@ -1278,7 +1286,7 @@ type SearchUsersResponse struct {
 
 func (x *SearchUsersResponse) Reset() {
 	*x = SearchUsersResponse{}
-	mi := &file_user_proto_msgTypes[17]
+	mi := &file_api_user_service_user_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1290,7 +1298,7 @@ func (x *SearchUsersResponse) String() string {
 func (*SearchUsersResponse) ProtoMessage() {}
 
 func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[17]
+	mi := &file_api_user_service_user_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1303,7 +1311,7 @@ func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchUsersResponse.ProtoReflect.Descriptor instead.
 func (*SearchUsersResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{17}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SearchUsersResponse) GetStatus() GetUserResponseStatus {
@@ -1337,7 +1345,7 @@ type CopyCardSetRequest struct {
 
 func (x *CopyCardSetRequest) Reset() {
 	*x = CopyCardSetRequest{}
-	mi := &file_user_proto_msgTypes[18]
+	mi := &file_api_user_service_user_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1349,7 +1357,7 @@ func (x *CopyCardSetRequest) String() string {
 func (*CopyCardSetRequest) ProtoMessage() {}
 
 func (x *CopyCardSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[18]
+	mi := &file_api_user_service_user_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1362,7 +1370,7 @@ func (x *CopyCardSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyCardSetRequest.ProtoReflect.Descriptor instead.
 func (*CopyCardSetRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{18}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CopyCardSetRequest) GetUserId() *UUID {
@@ -1389,7 +1397,7 @@ type CopyCardSetResponse struct {
 
 func (x *CopyCardSetResponse) Reset() {
 	*x = CopyCardSetResponse{}
-	mi := &file_user_proto_msgTypes[19]
+	mi := &file_api_user_service_user_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1401,7 +1409,7 @@ func (x *CopyCardSetResponse) String() string {
 func (*CopyCardSetResponse) ProtoMessage() {}
 
 func (x *CopyCardSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[19]
+	mi := &file_api_user_service_user_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1414,7 +1422,7 @@ func (x *CopyCardSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CopyCardSetResponse.ProtoReflect.Descriptor instead.
 func (*CopyCardSetResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{19}
+	return file_api_user_service_user_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CopyCardSetResponse) GetStatus() CopyCardSetStatus {
@@ -1431,12 +1439,11 @@ func (x *CopyCardSetResponse) GetNewSetId() *UUID {
 	return nil
 }
 
-var File_user_proto protoreflect.FileDescriptor
+var File_api_user_service_user_proto protoreflect.FileDescriptor
 
-const file_user_proto_rawDesc = "" +
+const file_api_user_service_user_proto_rawDesc = "" +
 	"\n" +
-	"\n" +
-	"user.proto\x12\x04user\"-\n" +
+	"\x1bapi/user-service/user.proto\x12\x04user\"-\n" +
 	"\x15GetUserByEmailRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"c\n" +
 	"\x18GetUserByProviderRequest\x12\x1a\n" +
@@ -1487,17 +1494,20 @@ const file_user_proto_rawDesc = "" +
 	"\vprovider_id\x18\x04 \x01(\tR\n" +
 	"providerId\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\tR\tcreatedAt\"\xfd\x01\n" +
+	"created_at\x18\x05 \x01(\tR\tcreatedAt\"\xad\x02\n" +
 	"\x0fGetUserResponse\x123\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1b.user.GetUserResponseStatusR\x06status\x12\x17\n" +
 	"\x04name\x18\x02 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1f\n" +
 	"\busername\x18\x03 \x01(\tH\x01R\busername\x88\x01\x01\x12'\n" +
 	"\x06userId\x18\x04 \x01(\v2\n" +
-	".user.UUIDH\x02R\x06userId\x88\x01\x01\x121\n" +
+	".user.UUIDH\x02R\x06userId\x88\x01\x01\x12 \n" +
+	"\tphoto_url\x18\x06 \x01(\tH\x03R\bphotoUrl\x88\x01\x01\x121\n" +
 	"\tproviders\x18\x05 \x03(\v2\x13.user.OAuthProviderR\tprovidersB\a\n" +
 	"\x05_nameB\v\n" +
 	"\t_usernameB\t\n" +
-	"\a_userId\"\xc8\x01\n" +
+	"\a_userIdB\f\n" +
+	"\n" +
+	"_photo_url\"\xc8\x01\n" +
 	"\x12CreateUserResponse\x12.\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x16.user.CreateUserStatusR\x06status\x12'\n" +
 	"\x06userId\x18\x02 \x01(\v2\n" +
@@ -1571,20 +1581,20 @@ const file_user_proto_rawDesc = "" +
 	"\x16UpdateUserAchievements\x12#.user.UpdateUserAchievementsRequest\x1a$.user.UpdateUserAchievementsResponseB\x0fZ\r./userserviceb\x06proto3"
 
 var (
-	file_user_proto_rawDescOnce sync.Once
-	file_user_proto_rawDescData []byte
+	file_api_user_service_user_proto_rawDescOnce sync.Once
+	file_api_user_service_user_proto_rawDescData []byte
 )
 
-func file_user_proto_rawDescGZIP() []byte {
-	file_user_proto_rawDescOnce.Do(func() {
-		file_user_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)))
+func file_api_user_service_user_proto_rawDescGZIP() []byte {
+	file_api_user_service_user_proto_rawDescOnce.Do(func() {
+		file_api_user_service_user_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_user_service_user_proto_rawDesc), len(file_api_user_service_user_proto_rawDesc)))
 	})
-	return file_user_proto_rawDescData
+	return file_api_user_service_user_proto_rawDescData
 }
 
-var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
-var file_user_proto_goTypes = []any{
+var file_api_user_service_user_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_api_user_service_user_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_api_user_service_user_proto_goTypes = []any{
 	(RemoveProviderFromUserStatus)(0),      // 0: user.RemoveProviderFromUserStatus
 	(GetUserProvidersStatus)(0),            // 1: user.GetUserProvidersStatus
 	(AddProviderToUserStatus)(0),           // 2: user.AddProviderToUserStatus
@@ -1612,7 +1622,7 @@ var file_user_proto_goTypes = []any{
 	(*CopyCardSetRequest)(nil),             // 24: user.CopyCardSetRequest
 	(*CopyCardSetResponse)(nil),            // 25: user.CopyCardSetResponse
 }
-var file_user_proto_depIdxs = []int32{
+var file_api_user_service_user_proto_depIdxs = []int32{
 	17, // 0: user.GetUserByProviderRequest.provider_id:type_name -> user.UUID
 	17, // 1: user.AddProviderToUserRequest.user_id:type_name -> user.UUID
 	2,  // 2: user.AddProviderToUserResponse.status:type_name -> user.AddProviderToUserStatus
@@ -1661,30 +1671,30 @@ var file_user_proto_depIdxs = []int32{
 	0,  // [0:21] is the sub-list for field type_name
 }
 
-func init() { file_user_proto_init() }
-func file_user_proto_init() {
-	if File_user_proto != nil {
+func init() { file_api_user_service_user_proto_init() }
+func file_api_user_service_user_proto_init() {
+	if File_api_user_service_user_proto != nil {
 		return
 	}
-	file_user_proto_msgTypes[13].OneofWrappers = []any{}
-	file_user_proto_msgTypes[14].OneofWrappers = []any{}
-	file_user_proto_msgTypes[19].OneofWrappers = []any{}
+	file_api_user_service_user_proto_msgTypes[13].OneofWrappers = []any{}
+	file_api_user_service_user_proto_msgTypes[14].OneofWrappers = []any{}
+	file_api_user_service_user_proto_msgTypes[19].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_user_service_user_proto_rawDesc), len(file_api_user_service_user_proto_rawDesc)),
 			NumEnums:      6,
 			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
-		GoTypes:           file_user_proto_goTypes,
-		DependencyIndexes: file_user_proto_depIdxs,
-		EnumInfos:         file_user_proto_enumTypes,
-		MessageInfos:      file_user_proto_msgTypes,
+		GoTypes:           file_api_user_service_user_proto_goTypes,
+		DependencyIndexes: file_api_user_service_user_proto_depIdxs,
+		EnumInfos:         file_api_user_service_user_proto_enumTypes,
+		MessageInfos:      file_api_user_service_user_proto_msgTypes,
 	}.Build()
-	File_user_proto = out.File
-	file_user_proto_goTypes = nil
-	file_user_proto_depIdxs = nil
+	File_api_user_service_user_proto = out.File
+	file_api_user_service_user_proto_goTypes = nil
+	file_api_user_service_user_proto_depIdxs = nil
 }
