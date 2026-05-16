@@ -71,6 +71,7 @@ func main() {
 		MaxFileSize: cfg.MultipartUpload.MaxFileSize,
 	}, uploadFileSvc)
 	getFileHandler := handlers.GetFile(fileSvc)
+	getRawFileHandler := handlers.GetRawFile(fileSvc, s3Client, cfg.S3.Bucket)
 	deleteFileHandler := handlers.DeleteFile(fileSvc)
 
 	// Router
@@ -105,6 +106,9 @@ func main() {
 		files.GET("/:file_id", getFileHandler)
 		files.DELETE("/:file_id", deleteFileHandler)
 	}
+
+	// Public raw file serving (no auth — used for avatar URLs)
+	r.GET("/v1.0/files/:file_id/raw", getRawFileHandler)
 
 	// Запуск HTTP сервера в горутине
 	httpAddr := fmt.Sprintf(":%d", cfg.HTTPPort)

@@ -62,10 +62,12 @@ func UploadFile(cfg *UploadFileConfig, svc *services.UploadFileService) gin.Hand
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"file_id":    resp.FileID,
-			"file_url":   resp.FileURL,
-			"file_size":  resp.FileSize,
-			"mime_type":  resp.MimeType,
+			"data": gin.H{
+				"file_id":   resp.FileID,
+				"file_url":  resp.FileURL,
+				"file_size": resp.FileSize,
+				"mime_type": resp.MimeType,
+			},
 		})
 	}
 }
