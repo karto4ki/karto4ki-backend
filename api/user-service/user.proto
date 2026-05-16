@@ -26,6 +26,54 @@ message CreateUserWithProviderRequest {
     string username = 4;
 }
 
+message AddProviderToUserRequest {
+    UUID user_id = 1;
+    string provider = 2; // google, apple
+    string provider_id = 3;
+}
+
+message AddProviderToUserResponse {
+    AddProviderToUserStatus status = 1;
+}
+
+message RemoveProviderFromUserRequest {
+    UUID user_id = 1;
+    string provider = 2;  // 'apple', 'google', etc.
+}
+
+message RemoveProviderFromUserResponse {
+    RemoveProviderFromUserStatus status = 1;
+}
+
+enum RemoveProviderFromUserStatus {
+    REMOVE_PROVIDER_SUCCESS = 0;
+    REMOVE_PROVIDER_FAILED = 1;
+    REMOVE_PROVIDER_NOT_FOUND = 2;
+    REMOVE_PROVIDER_VALIDATION_FAILED = 3;
+}
+
+message GetUserProvidersRequest {
+    UUID user_id = 1;
+}
+
+message GetUserProvidersResponse {
+    GetUserProvidersStatus status = 1;
+    repeated OAuthProvider providers = 2;
+}
+
+enum GetUserProvidersStatus {
+    GET_PROVIDERS_SUCCESS = 0;
+    GET_PROVIDERS_FAILED = 1;
+    GET_PROVIDERS_NOT_FOUND = 2;
+    GET_PROVIDERS_VALIDATION_FAILED = 3;
+}
+
+enum AddProviderToUserStatus {
+    ADD_PROVIDER_SUCCESS = 0;
+    ADD_PROVIDER_FAILED = 1;
+    ADD_PROVIDER_VALIDATION_FAILED = 2;
+}
+
 message UpdateUserAchievementsRequest {
     UUID user_id = 1;
     int32 sets = 2;
@@ -42,6 +90,14 @@ message UUID {
     string value = 1;
 }
 
+message OAuthProvider {
+    string id = 1;
+    string user_id = 2;
+    string provider = 3;  // 'apple', 'google', etc.
+    string provider_id = 4;  // ID от провайдера
+    string created_at = 5;
+}
+
 enum GetUserResponseStatus {
     SUCCESS = 0;
     FAILED = 1;
@@ -53,6 +109,8 @@ message GetUserResponse {
     optional string name = 2;
     optional string username = 3;
     optional UUID userId = 4;
+    optional string photo_url = 6;  // URL аватарки
+    repeated OAuthProvider providers = 5;  // Список всех провайдеров пользователя
 }
 
 message CreateUserResponse {
@@ -66,11 +124,45 @@ message UpdateUserAchievementsResponse {
     GetUserResponseStatus status = 1;
 }
 
+message SearchUsersRequest {
+    string query = 1;
+    int32 limit = 2;
+    int32 offset = 3;
+}
+
+message SearchUsersResponse {
+    GetUserResponseStatus status = 1;
+    repeated GetUserResponse users = 2;
+    int32 total = 3;
+}
+
+message CopyCardSetRequest {
+    UUID user_id = 1;
+    UUID set_id = 2;
+}
+
+message CopyCardSetResponse {
+    CopyCardSetStatus status = 1;
+    optional UUID new_set_id = 2;
+}
+
+enum CopyCardSetStatus {
+    COPY_SET_SUCCESS = 0;
+    COPY_SET_FAILED = 1;
+    COPY_SET_NOT_FOUND = 2;
+    COPY_SET_VALIDATION_FAILED = 3;
+}
+
 service UserService {
     rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserResponse);
     rpc GetUserByProvider(GetUserByProviderRequest) returns (GetUserResponse);
     rpc CreateUserWithEmail(CreateUserWithEmailRequest) returns (CreateUserResponse);
     rpc CreateUserWithProvider(CreateUserWithProviderRequest) returns (CreateUserResponse);
+    rpc AddProviderToUser(AddProviderToUserRequest) returns (AddProviderToUserResponse);
+    rpc RemoveProviderFromUser(RemoveProviderFromUserRequest) returns (RemoveProviderFromUserResponse);
+    rpc GetUserProviders(GetUserProvidersRequest) returns (GetUserProvidersResponse);
+    rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+    rpc CopyCardSet(CopyCardSetRequest) returns (CopyCardSetResponse);
 }
 
 service CardService {
