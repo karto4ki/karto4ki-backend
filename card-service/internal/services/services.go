@@ -80,8 +80,7 @@ func (s *CardSetService) GetCardSets(ctx context.Context, ownerID string, offset
 	}
 
 	for i := range sets {
-		count, _ := s.cardStorage.GetCountBySet(ctx, sets[i].ID)
-		sets[i].CardCount = count
+		// CardCount и LearnedCount уже заполнены в GetByOwner через SQL JOIN — дополнительный запрос не нужен
 
 		if ownerInfo, err := s.userClient.GetPublicProfile(ctx, sets[i].OwnerID); err == nil && ownerInfo != nil {
 			sets[i].Author = &models.AuthorInfo{

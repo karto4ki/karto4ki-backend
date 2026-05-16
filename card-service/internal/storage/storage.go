@@ -69,8 +69,16 @@ func (s *cardSetStorage) GetByID(ctx context.Context, id string) (*models.CardSe
 }
 
 func (s *cardSetStorage) GetByOwner(ctx context.Context, ownerID string, offset, limit int32) ([]models.CardSet, error) {
-	query := `SELECT id, owner_id, name, description, is_public, created_at FROM card_sets 
-			  WHERE owner_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT $3`
+	query := `
+		SELECT cs.id, cs.owner_id, cs.name, cs.description, cs.is_public, cs.created_at,
+		       COUNT(c.id)                                                        AS card_count,
+		       COUNT(c.id) FILTER (WHERE c.status IN ('reviewing', 'mastered'))   AS learned_count
+		FROM card_sets cs
+		LEFT JOIN cards c ON c.set_id = cs.id
+		WHERE cs.owner_id = $1
+		GROUP BY cs.id
+		ORDER BY cs.created_at DESC
+		OFFSET $2 LIMIT $3`
 	rows, err := s.db.QueryContext(ctx, query, ownerID, offset, limit)
 	if err != nil {
 		return nil, err
@@ -80,7 +88,8 @@ func (s *cardSetStorage) GetByOwner(ctx context.Context, ownerID string, offset,
 	var sets []models.CardSet
 	for rows.Next() {
 		var set models.CardSet
-		if err := rows.Scan(&set.ID, &set.OwnerID, &set.Name, &set.Description, &set.IsPublic, &set.CreatedAt); err != nil {
+		if err := rows.Scan(&set.ID, &set.OwnerID, &set.Name, &set.Description, &set.IsPublic, &set.CreatedAt,
+			&set.CardCount, &set.LearnedCount); err != nil {
 			return nil, err
 		}
 		sets = append(sets, set)
