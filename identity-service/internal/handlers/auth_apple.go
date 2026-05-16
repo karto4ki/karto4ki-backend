@@ -36,6 +36,11 @@ func AppleAuth(service AppleAuthService) gin.HandlerFunc {
 					ErrorType:    restapi.ErrTypeInvalidAppleToken,
 					ErrorMessage: "Invalid Apple ID token",
 				})
+			case errors.Is(err, services.ErrProviderAlreadyLinked):
+				c.JSON(http.StatusConflict, restapi.ErrorResponse{
+					ErrorType:    restapi.ErrTypeProviderAlreadyLinked,
+					ErrorMessage: "This Apple account is already linked to another user",
+				})
 			case errors.Is(err, services.ErrUserServiceUnavailable),
 				errors.Is(err, services.ErrUserCreationFailed),
 				errors.Is(err, services.ErrUnexpectedUserServiceStatus):

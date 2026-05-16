@@ -14,10 +14,7 @@ import (
 )
 
 var (
-	ErrInvalidGoogleToken          = errors.New("invalid Google token")
-	ErrUserServiceUnavailable      = errors.New("user service unavailable")
-	ErrUserCreationFailed          = errors.New("failed to create user")
-	ErrUnexpectedUserServiceStatus = errors.New("unexpected user service status")
+	ErrInvalidGoogleToken = errors.New("invalid Google token")
 )
 
 type GoogleAuthService struct {
@@ -64,9 +61,26 @@ func (s *GoogleAuthService) Authenticate(ctx context.Context, idToken string) (j
 		}
 
 		if emailResp.Status == userservice.GetUserResponseStatus_SUCCESS {
+			// ✅ Пользователь с таким email уже есть — привязываем Google provider
 			userID = uuid.MustParse(emailResp.UserId.GetValue())
 			name = *emailResp.Name
 			username = *emailResp.Username
+
+			addResp, err := s.userClient.AddProviderToUser(ctx, &userservice.AddProviderToUserRequest{
+				UserId:     emailResp.UserId,
+				Provider:   "google",
+				ProviderId: info.Sub,
+			})
+			if err != nil {
+				return jwt.Pair{}, fmt.Errorf("add provider to user: %w", err)
+			}
+			if addResp.Status != userservice.AddProviderToUserStatus_ADD_PROVIDER_SUCCESS {
+				if addResp.Status == userservice.AddProviderToUserStatus_ADD_PROVIDER_FAILED {
+					// Провайдер уже привязан к другому пользователю
+					return jwt.Pair{}, ErrProviderAlreadyLinked
+				}
+				return jwt.Pair{}, fmt.Errorf("add provider failed: status=%v", addResp.Status)
+			}
 		} else if emailResp.Status == userservice.GetUserResponseStatus_NOT_FOUND {
 			username = strings.Split(info.Email, "@")[0]
 			name = info.Name

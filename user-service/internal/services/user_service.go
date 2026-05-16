@@ -26,6 +26,10 @@ type UserRepository interface {
 	UpdatePhoto(ctx context.Context, id uuid.UUID, photoURL string) (*models.User, error)
 	DeletePhoto(ctx context.Context, id uuid.UUID) (*models.User, error)
 	SearchUsers(ctx context.Context, req storage.SearchUsersRequest) (*storage.SearchUsersResponse, error)
+	AddProviderToUser(ctx context.Context, userID uuid.UUID, provider, providerID string) error
+	RemoveProviderFromUser(ctx context.Context, userID uuid.UUID, provider string) error
+	GetUserProviders(ctx context.Context, userID uuid.UUID) ([]models.OAuthProvider, error)
+	CopyCardSet(ctx context.Context, req storage.CopyCardSetRequest) error
 }
 
 type UserService struct {
@@ -146,8 +150,16 @@ func (s *UserService) DeletePhoto(ctx context.Context, id uuid.UUID) (*models.Us
 	return user, nil
 }
 
-func (s *UserService) SearchUsers(ctx context.Context, req storage.SearchUsersRequest) (*storage.SearchUsersResponse, error) {
-	return s.repo.SearchUsers(ctx, req)
+func (s *UserService) AddProviderToUser(ctx context.Context, userID uuid.UUID, provider, providerID string) error {
+	return s.repo.AddProviderToUser(ctx, userID, provider, providerID)
+}
+
+func (s *UserService) RemoveProviderFromUser(ctx context.Context, userID uuid.UUID, provider string) error {
+	return s.repo.RemoveProviderFromUser(ctx, userID, provider)
+}
+
+func (s *UserService) GetUserProviders(ctx context.Context, userID uuid.UUID) ([]models.OAuthProvider, error) {
+	return s.repo.GetUserProviders(ctx, userID)
 }
 
 func (s *UserService) ExistsByUsername(ctx context.Context, username string) (bool, error) {
@@ -159,4 +171,12 @@ func (s *UserService) ExistsByUsername(ctx context.Context, username string) (bo
 		return false, err
 	}
 	return true, nil
+}
+
+func (s *UserService) SearchUsers(ctx context.Context, req storage.SearchUsersRequest) (*storage.SearchUsersResponse, error) {
+	return s.repo.SearchUsers(ctx, req)
+}
+
+func (s *UserService) CopyCardSet(ctx context.Context, req storage.CopyCardSetRequest) error {
+	return s.repo.CopyCardSet(ctx, req)
 }

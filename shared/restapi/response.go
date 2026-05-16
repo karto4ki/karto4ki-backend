@@ -31,6 +31,8 @@ const (
 	ErrTypeSignInMetaFail        = "sign_meta_fail"
 	ErrTypeInvalidGoogleToken    = "invalid_google_token"
 	ErrTypeInvalidAppleToken     = "invalid_apple_token"
+	ErrTypeProviderAlreadyLinked = "provider_already_linked"
+	ErrTypeProviderConflict      = "provider_conflict"
 )
 
 type ErrorDetail struct {

@@ -13,8 +13,15 @@ type User struct {
 	PhotoURL            *string   `db:"photo_url"`
 	CreatedAt           time.Time `db:"created_at"`
 	NotificationEnabled bool      `db:"notification_enabled"`
-	Provider            *string   `db:"provider"`
-	ProviderId          *string   `db:"provider_id"`
+	Providers           []OAuthProvider `db:"-"` // Загружается отдельно
+}
+
+type OAuthProvider struct {
+	ID         uuid.UUID `db:"id"`
+	UserID     uuid.UUID `db:"user_id"`
+	Provider   string    `db:"provider"`   // 'apple', 'google', etc.
+	ProviderID string    `db:"provider_id"` // ID от провайдера
+	CreatedAt  time.Time `db:"created_at"`
 }
 
 type Achievement struct {

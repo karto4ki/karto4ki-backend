@@ -32,7 +32,7 @@ signin_meta:
 signup:
   code_ttl: 5m
 oauth:
-  google_client_id: ""
+  google_client_id: "141687630390-bgi0d3tqstk7rls6umcdludg14einjel.apps.googleusercontent.com"
   apple_client_id: "com.lzkgmr.karto4ki"
 idempotency:
   data_exp: 10m
