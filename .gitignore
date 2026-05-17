@@ -13,6 +13,17 @@
 
 # env file
 .env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# Secrets and keys
+*.p8
+*.pem
+*.key
+secrets/
+private/
 
 # Keys
 keys/
