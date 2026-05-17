@@ -30,7 +30,8 @@ redis:
 
 jwt:
   signing_method: RS256
-  issuer: ai_service
+  lifetime: 1m
+  issuer: identity_service
   audience:
-    - card_service
+    - identity_service
   key_file_path: /app/keys/rsa.pub
