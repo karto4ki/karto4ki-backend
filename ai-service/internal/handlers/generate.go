@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -174,6 +175,118 @@ func (h *AIHandler) Summarize(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error_type":    "internal",
 			"error_message": "Failed to summarize: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": resp,
+	})
+}
+
+// GenerateCardsFromImage handles image upload and card generation
+func (h *AIHandler) GenerateCardsFromImage(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error_type":    "unauthorized",
+			"error_message": "User ID not found in token",
+		})
+		return
+	}
+
+	// Parse multipart form (max 10MB)
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10*1024*1024)
+	if err := c.Request.ParseMultipartForm(10 * 1024 * 1024); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_type":    "validation_failed",
+			"error_message": "File too large (max 10MB)",
+			"error_details": []gin.H{{"field": "file", "message": err.Error()}},
+		})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_type":    "validation_failed",
+			"error_message": "Image file is required",
+			"error_details": []gin.H{{"field": "file", "message": err.Error()}},
+		})
+		return
+	}
+	defer file.Close()
+
+	// Validate file type
+	contentType := header.Header.Get("Content-Type")
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/jpg":  true,
+		"image/png":  true,
+		"image/webp": true,
+	}
+	if !allowedTypes[contentType] {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_type":    "validation_failed",
+			"error_message": "Invalid file type. Allowed: JPEG, PNG, WebP",
+			"error_details": []gin.H{{"field": "file", "message": fmt.Sprintf("got %s", contentType)}},
+		})
+		return
+	}
+
+	// Read image data
+	imageData := make([]byte, header.Size)
+	if _, err := file.Read(imageData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_type":    "internal",
+			"error_message": "Failed to read image",
+			"error_details": []gin.H{{"field": "file", "message": err.Error()}},
+		})
+		return
+	}
+
+	// Parse optional form fields
+	cardCount := 5
+	if val := c.PostForm("card_count"); val != "" {
+		if n, err := fmt.Sscanf(val, "%d", &cardCount); err == nil && n == 1 {
+			if cardCount < 1 || cardCount > 150 {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error_type":    "validation_failed",
+					"error_message": "Invalid card count",
+					"error_details": []gin.H{{"field": "card_count", "message": "must be between 1 and 150"}},
+				})
+				return
+			}
+		}
+	}
+
+	difficulty := c.PostForm("difficulty")
+	if difficulty == "" {
+		difficulty = "intermediate"
+	}
+
+	language := c.PostForm("language")
+	if language == "" {
+		language = "ru"
+	}
+
+	setName := c.PostForm("set_name")
+	if setName == "" {
+		setName = "AI Generated Set from Image"
+	}
+
+	// Generate cards from image
+	resp, err := h.service.GenerateCardsFromImage(c.Request.Context(), userID, services.GenerateCardsFromImageRequest{
+		ImageData:  imageData,
+		CardCount:  cardCount,
+		Difficulty: difficulty,
+		Language:   language,
+		SetName:    setName,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_type":    "internal",
+			"error_message": "Failed to generate cards from image: " + err.Error(),
 		})
 		return
 	}

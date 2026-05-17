@@ -173,6 +173,8 @@ Requirements:
 - Each card should have a clear question (front) and accurate answer (back)
 - Focus on key concepts, definitions, and important facts
 - Avoid trivial information
+- IMPORTANT: Do not create duplicate cards. Each card should cover a unique concept.
+- IMPORTANT: Vary your question formulations. For similar concepts, use different question styles (e.g., "What is...?", "Define...", "Explain...", "How does...?").
 - %s
 - Language: %s
 
@@ -192,7 +194,9 @@ func buildQuizGenerationPrompt(text string, questionCount int, difficulty, langu
 Requirements:
 - Each question should have 4 options (1 correct, 3 plausible distractors)
 - Include explanation for the correct answer
-- %s language
+- IMPORTANT: Do not create duplicate questions. Each question should test a unique concept.
+- IMPORTANT: Vary your question styles (e.g., direct questions, scenario-based, "which of the following", etc.).
+- Language: %s
 - Difficulty: %s
 
 Format your response as a JSON array:

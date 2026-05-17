@@ -160,6 +160,108 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /generate-cards-from-docx:
+    post:
+      summary: Generate flashcards from DOCX file
+      description: |
+        Extract text from uploaded DOCX file and generate flashcards using AI.
+        Creates a new card set in Card Service asynchronously.
+
+        Returns a task_id that can be used to poll for progress status.
+
+        Possible `error_type` values:
+        - `validation_failed` (file too large, insufficient text)
+        - `unauthorized`
+        - `internal`
+      tags:
+        - generate
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GenerateCardsFromDOCXRequest'
+      responses:
+        '202':
+          description: Accepted - Generation task started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GenerationTaskStarted'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /generate-cards-from-txt:
+    post:
+      summary: Generate flashcards from TXT file
+      description: |
+        Extract text from uploaded TXT file and generate flashcards using AI.
+        Creates a new card set in Card Service asynchronously.
+
+        Returns a task_id that can be used to poll for progress status.
+
+        Possible `error_type` values:
+        - `validation_failed` (file too large, insufficient text)
+        - `unauthorized`
+        - `internal`
+      tags:
+        - generate
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GenerateCardsFromTXTRequest'
+      responses:
+        '202':
+          description: Accepted - Generation task started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/GenerationTaskStarted'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /generate-quiz:
     post:
       summary: Generate quiz from text
@@ -516,3 +618,59 @@ components:
                 type: string
               message:
                 type: string
+
+    GenerateCardsFromDOCXRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          description: DOCX file to process
+        card_count:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 150
+          default: 5
+        difficulty:
+          type: string
+          enum: [easy, intermediate, advanced]
+          default: intermediate
+        language:
+          type: string
+          default: ru
+        set_name:
+          type: string
+          default: DOCX Generated Set
+        set_description:
+          type: string
+      required:
+        - file
+
+    GenerateCardsFromTXTRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          description: TXT file to process
+        card_count:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 150
+          default: 5
+        difficulty:
+          type: string
+          enum: [easy, intermediate, advanced]
+          default: intermediate
+        language:
+          type: string
+          default: ru
+        set_name:
+          type: string
+          default: TXT Generated Set
+        set_description:
+          type: string
+      required:
+        - file
