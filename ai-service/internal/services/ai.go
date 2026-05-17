@@ -4,26 +4,38 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/karto4ki/karto4ki-backend/ai-service/internal/clients"
+	"github.com/karto4ki/karto4ki-backend/ai-service/internal/kafka"
 	"github.com/karto4ki/karto4ki-backend/ai-service/internal/models"
 	"github.com/karto4ki/karto4ki-backend/ai-service/internal/storage"
 )
 
 type AIService struct {
-	llmClient   LLMClient
-	cardClient  *clients.CardServiceClient
-	httpClient  *http.Client
-	taskStorage *storage.GenerationTaskStorage
+	llmClient     LLMClient
+	visionClient  *VisionClient
+	cardClient    *clients.CardServiceClient
+	httpClient    *http.Client
+	taskStorage   *storage.GenerationTaskStorage
+	kafkaProducer *kafka.Producer
 }
 
-func NewAIService(llmClient LLMClient, cardClient *clients.CardServiceClient, taskStorage *storage.GenerationTaskStorage) *AIService {
+func NewAIService(
+	llmClient LLMClient,
+	visionClient *VisionClient,
+	cardClient *clients.CardServiceClient,
+	taskStorage *storage.GenerationTaskStorage,
+	kafkaProducer *kafka.Producer,
+) *AIService {
 	return &AIService{
-		llmClient:   llmClient,
-		cardClient:  cardClient,
-		taskStorage: taskStorage,
+		llmClient:     llmClient,
+		visionClient:  visionClient,
+		cardClient:    cardClient,
+		taskStorage:   taskStorage,
+		kafkaProducer: kafkaProducer,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -82,23 +94,47 @@ func (s *AIService) GenerateCardsAsync(ctx context.Context, userID string, req G
 	// Create task
 	taskID := uuid.New().String()
 	task := &models.GenerationTask{
-		TaskID:        taskID,
-		UserID:        userID,
-		Status:        models.TaskStatusPending,
-		Progress:      0,
-		TotalCards:    req.CardCount,
+		TaskID:         taskID,
+		UserID:         userID,
+		Status:         models.TaskStatusPending,
+		Progress:       0,
+		TotalCards:     req.CardCount,
 		GeneratedCards: 0,
-		SetName:       req.SetName,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		SetName:        req.SetName,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	if err := s.taskStorage.CreateTask(ctx, task); err != nil {
 		return "", fmt.Errorf("create task: %w", err)
 	}
 
-	// Start async generation
-	go s.processGeneration(ctx, taskID, req, userID)
+	// Publish task to Kafka queue
+	kafkaTask := &kafka.GenerationTaskMessage{
+		TaskID:         taskID,
+		UserID:         userID,
+		Text:           req.Text,
+		CardCount:      req.CardCount,
+		Difficulty:     req.Difficulty,
+		Language:       req.Language,
+		SetName:        req.SetName,
+		SetDescription: req.SetDescription,
+		CreatedAt:      time.Now(),
+	}
+
+	if err := s.kafkaProducer.PublishTask(ctx, kafkaTask); err != nil {
+		_ = s.taskStorage.FailTask(ctx, taskID, fmt.Sprintf("Failed to queue task: %v", err))
+		return "", fmt.Errorf("publish task to kafka: %w", err)
+	}
+
+	// Publish event
+	_ = s.kafkaProducer.PublishEvent(ctx, &kafka.GenerationEventMessage{
+		TaskID:    taskID,
+		UserID:    userID,
+		EventType: "task.created",
+		Status:    "pending",
+		Timestamp: time.Now(),
+	})
 
 	return taskID, nil
 }
@@ -115,6 +151,9 @@ func (s *AIService) processGeneration(ctx context.Context, taskID string, req Ge
 		_ = s.taskStorage.FailTask(ctx, taskID, fmt.Sprintf("LLM generation failed: %v", err))
 		return
 	}
+
+	// Remove duplicates
+	cards = DeduplicateCards(cards)
 
 	// Update progress after LLM generation
 	if err := s.taskStorage.UpdateProgress(ctx, taskID, len(cards), models.TaskStatusProcessing); err != nil {
@@ -238,6 +277,59 @@ func (s *AIService) Summarize(ctx context.Context, req SummarizeRequest) (*Summa
 	}, nil
 }
 
+// GenerateCardsFromImageRequest represents a request to generate cards from an image
+type GenerateCardsFromImageRequest struct {
+	ImageData  []byte `json:"-"` // Raw image bytes
+	CardCount  int    `json:"card_count,omitempty"`
+	Difficulty string `json:"difficulty,omitempty"`
+	Language   string `json:"language,omitempty"`
+	SetName    string `json:"set_name,omitempty"`
+}
+
+// GenerateCardsFromImage generates flashcards from an image using Vision API
+func (s *AIService) GenerateCardsFromImage(ctx context.Context, userID string, req GenerateCardsFromImageRequest) (*GenerateCardsResponse, error) {
+	if req.CardCount <= 0 {
+		req.CardCount = 5
+	}
+	if req.Difficulty == "" {
+		req.Difficulty = "intermediate"
+	}
+	if req.Language == "" {
+		req.Language = "ru"
+	}
+	if req.SetName == "" {
+		req.SetName = "AI Generated Set from Image"
+	}
+
+	if s.visionClient == nil {
+		return nil, fmt.Errorf("vision client not configured")
+	}
+
+	cards, err := s.visionClient.GenerateCardsFromImage(ctx, req.ImageData, req.CardCount, req.Difficulty, req.Language)
+	if err != nil {
+		return nil, fmt.Errorf("generate cards from image: %w", err)
+	}
+
+	var description *string
+	setID, err := s.createCardSet(ctx, userID, req.SetName, description)
+	if err != nil {
+		return nil, fmt.Errorf("create card set: %w", err)
+	}
+
+	for _, card := range cards {
+		if err := s.createCard(ctx, setID, card.Front, card.Back, nil, nil); err != nil {
+			_ = s.deleteCardSet(ctx, setID, userID)
+			return nil, fmt.Errorf("create card: %w", err)
+		}
+	}
+
+	return &GenerateCardsResponse{
+		SetID:   setID,
+		SetName: req.SetName,
+		Cards:   cards,
+	}, nil
+}
+
 func (s *AIService) createCardSet(ctx context.Context, userID, name string, description *string) (string, error) {
 	result, err := s.cardClient.CreateCardSet(ctx, userID, name, description, false)
 	if err != nil {
@@ -254,4 +346,20 @@ func (s *AIService) createCard(ctx context.Context, setID, front, back string, i
 func (s *AIService) deleteCardSet(ctx context.Context, setID, userID string) error {
 	_, err := s.cardClient.DeleteCardSet(ctx, setID, userID)
 	return err
+}
+
+// DeduplicateCards removes duplicate cards based on front+back combination
+func DeduplicateCards(cards []GeneratedCard) []GeneratedCard {
+	seen := make(map[string]bool)
+	result := make([]GeneratedCard, 0, len(cards))
+
+	for _, card := range cards {
+		key := strings.ToLower(strings.TrimSpace(card.Front) + "|" + strings.TrimSpace(card.Back))
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, card)
+		}
+	}
+
+	return result
 }
