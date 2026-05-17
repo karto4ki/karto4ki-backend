@@ -40,13 +40,15 @@ func main() {
 
 	userClient := userclient.NewClient("http://user-service:8080")
 
-	cardSetService := services.NewCardSetService(cardSetStorage, cardStorage, userClient)
+	cardSetService := services.NewCardSetService(cardSetStorage, cardStorage, statsStorage, userClient)
 	cardService := services.NewCardService(cardSetStorage, cardStorage)
 	learningService := services.NewLearningService(cardSetStorage, cardStorage, sessionStorage, statsStorage)
+	quizService := services.NewQuizService(cardStorage)
 
 	cardSetHandler := handlers.NewCardSetHandler(cardSetService)
 	cardHandler := handlers.NewCardHandler(cardService)
 	learningHandler := handlers.NewLearningHandler(learningService)
+	quizHandler := handlers.NewQuizHandler(quizService)
 
 	jwtConf := loadJWTConfig(cfg.JWT)
 	authMiddleware := auth.NewJWT(&auth.JWTConfig{
@@ -70,6 +72,8 @@ func main() {
 
 		sets.POST("/:setId/study", learningHandler.StartStudySession)
 		sets.GET("/:setId/stats", learningHandler.GetSetStatistics)
+		
+		sets.POST("/:setId/quiz/start", quizHandler.StartQuizSession)
 	}
 
 	cards := r.Group("/v1.0/cards", authMiddleware)
@@ -82,6 +86,12 @@ func main() {
 	study := r.Group("/v1.0/study", authMiddleware)
 	{
 		study.POST("/:sessionId/answer", learningHandler.SubmitAnswer)
+	}
+
+	quiz := r.Group("/v1.0/quiz", authMiddleware)
+	{
+		quiz.POST("/:sessionId/answer", quizHandler.SubmitAnswer)
+		quiz.POST("/:sessionId/finish", quizHandler.FinishQuiz)
 	}
 
 	search := r.Group("/v1.0/search", authMiddleware)

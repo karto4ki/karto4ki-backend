@@ -9,6 +9,7 @@ tags:
   - name: sets
   - name: cards
   - name: learning
+  - name: quiz
   - name: search
 paths:
   /sets:
@@ -728,6 +729,156 @@ paths:
             application/json:
               schema:
                 "$ref": '#/components/schemas/ErrorResponse'
+  /sets/{setId}/quiz/start:
+    post:
+      summary: Start quiz session
+      description: |
+        Start a quiz session with multiple-choice questions.
+        Returns questions with 4 answer options (1 correct, 3 wrong).
+        Minimum 4 cards required in the set.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `internal`
+      tags:
+        - quiz
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: setId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartQuizRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/QuizSession'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /quiz/{sessionId}/answer:
+    post:
+      summary: Submit quiz answer
+      description: |
+        Submit answer for a quiz question.
+        Returns whether the answer was correct.
+        Possible `error_type` values:
+        - `invalid_json`
+        - `validation_failed`
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - quiz
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitQuizAnswerRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/QuizAnswerResult'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponseWithDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+  /quiz/{sessionId}/finish:
+    post:
+      summary: Finish quiz session
+      description: |
+        Finish quiz session and get final results.
+        Returns score percentage and correct/incorrect counts.
+        Possible `error_type` values:
+        - `unauthorized`
+        - `not_found`
+        - `forbidden`
+        - `internal`
+      tags:
+        - quiz
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/QuizResult'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/ErrorResponse'
   /search:
     get:
       summary: Search public card sets
@@ -857,6 +1008,10 @@ components:
         learned_count:
           type: integer
           format: int32
+        mastery_percentage:
+          type: number
+          format: float
+          description: Percentage of learned cards (0-100)
         is_public:
           type: boolean
         created_at:
@@ -1031,13 +1186,13 @@ components:
             $ref: '#/components/schemas/Card'
         session_type:
           type: string
-          enum: [review, test, audio]
+          enum: [review, test, audio, learn]
     StartStudyRequest:
       type: object
       properties:
         session_type:
           type: string
-          enum: [review, test, audio]
+          enum: [review, test, audio, learn]
           default: review
         limit:
           type: integer
@@ -1047,13 +1202,16 @@ components:
       type: object
       required:
         - card_id
-        - is_correct
+        - rating
       properties:
         card_id:
           type: string
           format: uuid
-        is_correct:
-          type: boolean
+        rating:
+          type: integer
+          format: int32
+          enum: [0, 1]
+          description: "0 = не помню, 1 = помню"
         time_spent_ms:
           type: integer
           format: int64
@@ -1072,6 +1230,116 @@ components:
         streak:
           type: integer
           format: int32
+    StartQuizRequest:
+      type: object
+      required:
+        - question_count
+      properties:
+        question_count:
+          type: integer
+          format: int32
+          minimum: 4
+          maximum: 50
+          default: 10
+    QuizSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        set_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        question_count:
+          type: integer
+          format: int32
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuizQuestion'
+        created_at:
+          type: string
+          format: date-time
+    QuizQuestion:
+      type: object
+      properties:
+        card_id:
+          type: string
+          format: uuid
+        front:
+          type: string
+        back:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuizOption'
+        correct_index:
+          type: integer
+          format: int32
+    QuizOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+        is_correct:
+          type: boolean
+    SubmitQuizAnswerRequest:
+      type: object
+      required:
+        - question_index
+        - selected_index
+      properties:
+        question_index:
+          type: integer
+          format: int32
+        selected_index:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 3
+        time_spent_ms:
+          type: integer
+          format: int64
+    QuizAnswerResult:
+      type: object
+      properties:
+        question_index:
+          type: integer
+          format: int32
+        is_correct:
+          type: boolean
+        correct_index:
+          type: integer
+          format: int32
+        explanation:
+          type: string
+    QuizResult:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        total_questions:
+          type: integer
+          format: int32
+        correct_answers:
+          type: integer
+          format: int32
+        incorrect_answers:
+          type: integer
+          format: int32
+        score_percentage:
+          type: number
+          format: float
+        time_spent_ms:
+          type: integer
+          format: int64
     SetStatistics:
       type: object
       properties:
