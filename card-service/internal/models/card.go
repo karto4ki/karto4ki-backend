@@ -26,6 +26,7 @@ const (
 	SessionTypeAudio  SessionType = "audio"
 	SessionTypeLearn  SessionType = "learn"
 	SessionTypeQuiz   SessionType = "quiz"
+	SessionTypeAll    SessionType = "all"
 )
 
 type QuizOption struct {

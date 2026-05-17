@@ -382,6 +382,33 @@ func (s *LearningService) StartStudySession(ctx context.Context, setID, userID s
 	return session, nil
 }
 
+// StartStudySessionAll starts a study session across ALL user's sets
+func (s *LearningService) StartStudySessionAll(ctx context.Context, userID string, sessionType models.SessionType, limit int32) (*models.StudySession, error) {
+	cards, err := s.cardStorage.GetCardsForStudyAll(ctx, userID, sessionType, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(cards) == 0 {
+		return nil, ErrNotFound
+	}
+
+	session := &models.StudySession{
+		ID:          uuid.New().String(),
+		SetID:       "",
+		UserID:      userID,
+		SessionType: sessionType,
+		Cards:       cards,
+		CreatedAt:   time.Now(),
+	}
+
+	if err := s.sessionStorage.Create(ctx, session); err != nil {
+		return nil, err
+	}
+
+	return session, nil
+}
+
 func (s *LearningService) SubmitAnswer(ctx context.Context, sessionID, cardID, userID string, rating models.CardRating, timeSpentMs int64) (*AnswerResult, error) {
 	session, err := s.sessionStorage.GetByID(ctx, sessionID)
 	if err != nil {

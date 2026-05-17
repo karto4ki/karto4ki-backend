@@ -7,6 +7,7 @@ import (
 
 	"github.com/karto4ki/karto4ki-backend/card-service/internal/models"
 	"github.com/karto4ki/karto4ki-backend/shared/postgres"
+	"github.com/lib/pq"
 )
 
 type CardSetStorage interface {
@@ -26,6 +27,7 @@ type CardStorage interface {
 	Delete(ctx context.Context, id string) error
 	GetCountBySet(ctx context.Context, setID string) (int32, error)
 	GetCardsForStudy(ctx context.Context, setID string, sessionType models.SessionType, limit int32) ([]models.Card, error)
+	GetCardsForStudyAll(ctx context.Context, userID string, sessionType models.SessionType, limit int32) ([]models.Card, error)
 	GetCardsForQuiz(ctx context.Context, setID string, limit int32) ([]models.Card, error)
 	UpdateCardStatus(ctx context.Context, cardID string, status models.CardStatus, errorCount int32, lastRating models.CardRating, nextReview time.Time, streak int32) error
 }
@@ -227,6 +229,79 @@ func (c *cardStorage) GetCardsForStudy(ctx context.Context, setID string, sessio
 	}
 
 	rows, err := c.db.QueryContext(ctx, query, setID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cards []models.Card
+	for rows.Next() {
+		var card models.Card
+		var nextReview sql.NullTime
+		if err := rows.Scan(&card.ID, &card.SetID, &card.Front, &card.Back, &card.ImageURL, &card.AudioURL, &card.Status, &card.ErrorCount, &card.LastRating, &nextReview, &card.CreatedAt); err != nil {
+			return nil, err
+		}
+		if nextReview.Valid {
+			card.NextReview = &nextReview.Time
+		}
+		cards = append(cards, card)
+	}
+	return cards, rows.Err()
+}
+
+// GetCardsForStudyAll returns cards from ALL sets owned by the user for study
+func (c *cardStorage) GetCardsForStudyAll(ctx context.Context, userID string, sessionType models.SessionType, limit int32) ([]models.Card, error) {
+	setsQuery := `SELECT id FROM card_sets WHERE owner_id = $1`
+	setRows, err := c.db.QueryContext(ctx, setsQuery, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer setRows.Close()
+
+	var setIDs []string
+	for setRows.Next() {
+		var setID string
+		if err := setRows.Scan(&setID); err != nil {
+			return nil, err
+		}
+		setIDs = append(setIDs, setID)
+	}
+
+	if len(setIDs) == 0 {
+		return []models.Card{}, nil
+	}
+
+	var query string
+	switch sessionType {
+	case models.SessionTypeReview:
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
+				 WHERE set_id = ANY($1) AND (next_review IS NULL OR next_review <= NOW())
+				 ORDER BY
+					CASE WHEN next_review IS NULL THEN 0 ELSE 1 END,
+					error_count DESC,
+					next_review ASC
+				 LIMIT $2`
+	case models.SessionTypeLearn:
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
+				 WHERE set_id = ANY($1)
+				 ORDER BY
+					last_rating ASC,
+					CASE WHEN next_review IS NULL OR next_review <= NOW() THEN 0 ELSE 1 END,
+					error_count DESC,
+					created_at ASC
+				 LIMIT $2`
+	case models.SessionTypeTest:
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
+				 WHERE set_id = ANY($1) ORDER BY RANDOM() LIMIT $2`
+	case models.SessionTypeAudio:
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
+				 WHERE set_id = ANY($1) AND audio_url IS NOT NULL ORDER BY RANDOM() LIMIT $2`
+	default:
+		query = `SELECT id, set_id, front, back, image_url, audio_url, status, error_count, last_rating, next_review, created_at FROM cards
+				 WHERE set_id = ANY($1) ORDER BY last_rating ASC, error_count DESC, created_at ASC LIMIT $2`
+	}
+
+	rows, err := c.db.QueryContext(ctx, query, pq.Array(setIDs), limit)
 	if err != nil {
 		return nil, err
 	}
