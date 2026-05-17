@@ -50,8 +50,12 @@ func main() {
 	// Initialize LLM client
 	llmClient := createLLMClient(cfg.LLM)
 
+	// Initialize Kafka producer
+	kafkaProducer := kafka.NewProducer(cfg.Kafka)
+	defer kafkaProducer.Close()
+
 	// Create worker service
-	workerService := services.NewWorkerService(llmClient, cardClient, taskStorage)
+	workerService := services.NewWorkerService(llmClient, cardClient, taskStorage, kafkaProducer)
 
 	// Create Kafka consumer
 	kafkaConsumer := kafka.NewConsumer(cfg.Kafka, func(ctx context.Context, task *kafka.GenerationTaskMessage) error {
