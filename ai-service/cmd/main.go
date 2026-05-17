@@ -12,6 +12,7 @@ import (
 	"github.com/karto4ki/karto4ki-backend/ai-service/internal/clients"
 	"github.com/karto4ki/karto4ki-backend/ai-service/internal/config"
 	"github.com/karto4ki/karto4ki-backend/ai-service/internal/handlers"
+	"github.com/karto4ki/karto4ki-backend/ai-service/internal/kafka"
 	"github.com/karto4ki/karto4ki-backend/ai-service/internal/services"
 	"github.com/karto4ki/karto4ki-backend/ai-service/internal/storage"
 	"github.com/karto4ki/karto4ki-backend/shared/auth"
@@ -23,6 +24,7 @@ func main() {
 	cfg := config.LoadConfig("/app/config.yml")
 
 	llmClient := createLLMClient(cfg.LLM)
+	visionClient := createVisionClient(cfg.LLM)
 
 	jwtConf := loadJWTConfig(cfg.JWT)
 
@@ -51,10 +53,16 @@ func main() {
 	// Initialize task storage
 	taskStorage := storage.NewGenerationTaskStorage(redisClient, cfg.Redis.TaskTTLHours)
 
+	// Initialize Kafka producer
+	kafkaProducer := kafka.NewProducer(cfg.Kafka)
+	defer kafkaProducer.Close()
+
 	aiService := services.NewAIService(
 		llmClient,
+		visionClient,
 		cardClient,
 		taskStorage,
+		kafkaProducer,
 	)
 
 	aiHandler := handlers.NewAIHandler(aiService)
@@ -78,9 +86,12 @@ func main() {
 	{
 		ai.POST("/generate-cards", aiHandler.GenerateCards)
 		ai.POST("/generate-cards-from-pdf", aiHandler.GenerateCardsFromPDF)
+		ai.POST("/generate-cards-from-docx", aiHandler.GenerateCardsFromDOCX)
+		ai.POST("/generate-cards-from-txt", aiHandler.GenerateCardsFromTXT)
+		ai.POST("/generate-cards-from-image", aiHandler.GenerateCardsFromImage) // Vision API (GPT-4o-mini)
 		ai.POST("/generate-quiz", aiHandler.GenerateQuiz)
 		ai.POST("/summarize", aiHandler.Summarize)
-		
+
 		// Task status endpoint (no auth required for polling, task_id is unguessable)
 		ai.GET("/generate-cards/status/:task_id", taskStatusHandler.GetTaskStatus)
 	}
@@ -105,6 +116,21 @@ func createLLMClient(cfg config.LLMConfig) services.LLMClient {
 
 	log.Printf("Using LLM provider: %s, model: %s, base_url: %s", cfg.Provider, cfg.Model, cfg.BaseURL)
 	return services.NewOpenAIClient(cfg.APIKey, cfg.BaseURL, cfg.Model, cfg.Provider)
+}
+
+func createVisionClient(cfg config.LLMConfig) *services.VisionClient {
+	if os.Getenv("LLM_MOCK") == "true" {
+		log.Println("Using mock Vision client")
+		return nil
+	}
+
+	if cfg.APIKey == "" {
+		log.Println("Warning: Vision API key not set, Vision features disabled")
+		return nil
+	}
+
+	log.Printf("Using Vision API provider: %s, model: %s, base_url: %s", cfg.Provider, cfg.Model, cfg.BaseURL)
+	return services.NewVisionClient(cfg.APIKey, cfg.BaseURL, cfg.Model, cfg.Provider)
 }
 
 func loadJWTConfig(cfg config.JWTConfig) *jwt.Config {
