@@ -73,8 +73,14 @@ type Config struct {
 	} `mapstructure:"email"`
 
 	OAuth struct {
-		GoogleClientID string `mapstructure:"google_client_id"`
-		AppleClientID  string `mapstructure:"apple_client_id"`
+		GoogleClientID     string `mapstructure:"google_client_id"`
+		GoogleClientSecret string `mapstructure:"google_client_secret"`
+		AppleClientID      string `mapstructure:"apple_client_id"`
+		AppleKeyID         string `mapstructure:"apple_key_id"`
+		AppleTeamID        string `mapstructure:"apple_team_id"`
+		ApplePrivateKeyPath string `mapstructure:"apple_private_key_path"`
+		YandexClientID     string `mapstructure:"yandex_client_id"`
+		YandexClientSecret string `mapstructure:"yandex_client_secret"`
 	} `mapstructure:"oauth"`
 
 	SignUp struct {
@@ -84,8 +90,25 @@ type Config struct {
 
 func loadConfig(file string) *Config {
 	viper.AutomaticEnv()
+	
+	// SMTP configuration
 	viper.BindEnv("email.email", "SMTP_EMAIL")
 	viper.BindEnv("email.api_key", "SMTP_APIKEY")
+	viper.BindEnv("email.host", "SMTP_HOST")
+	viper.BindEnv("email.port", "SMTP_PORT")
+	viper.BindEnv("email.username", "SMTP_USERNAME")
+	viper.BindEnv("email.password", "SMTP_PASSWORD")
+	viper.BindEnv("email.from", "SMTP_FROM")
+	
+	// OAuth configuration
+	viper.BindEnv("oauth.google_client_id", "GOOGLE_CLIENT_ID")
+	viper.BindEnv("oauth.google_client_secret", "GOOGLE_CLIENT_SECRET")
+	viper.BindEnv("oauth.apple_client_id", "APPLE_CLIENT_ID")
+	viper.BindEnv("oauth.apple_key_id", "APPLE_KEY_ID")
+	viper.BindEnv("oauth.apple_team_id", "APPLE_TEAM_ID")
+	viper.BindEnv("oauth.apple_private_key_path", "APPLE_PRIVATE_KEY_PATH")
+	viper.BindEnv("oauth.yandex_client_id", "YANDEX_CLIENT_ID")
+	viper.BindEnv("oauth.yandex_client_secret", "YANDEX_CLIENT_SECRET")
 
 	viper.SetConfigFile(file)
 	if err := viper.ReadInConfig(); err != nil {

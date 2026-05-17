@@ -4,7 +4,23 @@ llm:
   provider: openrouter
   api_key: ""
   base_url: https://openrouter.ai/api/v1
-  model: meta-llama/llama-3.1-70b-instruct
+  model: openai/gpt-4o-mini
+  vision: true  # Поддержка мультимодальных моделей (изображения + текст)
+
+  # Несколько провайдеров с приоритетами (опционально)
+  # providers:
+  #   - name: openrouter
+  #     priority: 1
+  #     api_key: ""
+  #     base_url: https://openrouter.ai/api/v1
+  #     model: openai/gpt-4o-mini
+  #     vision: true
+  #   - name: yandexgpt
+  #     priority: 2
+  #     api_key: ""
+  #     base_url: https://llm.api.cloud.yandex.net/foundationModels/v1
+  #     model: yandexgpt-lite
+  #     vision: false
 
 generation:
   default_card_count: 5
@@ -17,6 +33,15 @@ pdf:
   max_file_size_mb: 10
   min_text_length: 100
 
+vision:
+  max_file_size_mb: 10
+  min_text_length: 20
+  supported_formats:
+    - image/jpeg
+    - image/png
+    - image/webp
+  default_language: ru
+
 card_service:
   grpc_address: card-service:50052
   timeout: 30s
@@ -27,6 +52,21 @@ redis:
   password: ""
   db: 0
   task_ttl_hours: 24
+
+kafka:
+  brokers:
+    - kafka:29092
+  consumer_group: ai-workers
+  topics:
+    generation_tasks: "ai.generation.tasks"
+    generation_events: "ai.generation.events"
+  consumer:
+    concurrency: 3
+    max_retries: 3
+    retry_delay_ms: 1000
+  producer:
+    required_acks: 1
+    timeout_ms: 5000
 
 jwt:
   signing_method: RS256
