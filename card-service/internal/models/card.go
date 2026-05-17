@@ -25,21 +25,68 @@ const (
 	SessionTypeTest   SessionType = "test"
 	SessionTypeAudio  SessionType = "audio"
 	SessionTypeLearn  SessionType = "learn"
+	SessionTypeQuiz   SessionType = "quiz"
 )
 
+type QuizOption struct {
+	ID         string `json:"id"`
+	Text       string `json:"text"`
+	IsCorrect  bool   `json:"is_correct"`
+}
+
+type QuizQuestion struct {
+	CardID       string       `json:"card_id"`
+	Front        string       `json:"front"`
+	Back         string       `json:"back"`
+	Options      []QuizOption `json:"options"`
+	CorrectIndex int          `json:"correct_index"`
+}
+
+type QuizSession struct {
+	ID          string         `json:"id"`
+	SetID       string         `json:"set_id"`
+	UserID      string         `json:"user_id"`
+	QuestionCount int          `json:"question_count"`
+	Questions   []QuizQuestion `json:"questions"`
+	CreatedAt   time.Time      `json:"created_at"`
+}
+
+type QuizAnswerRequest struct {
+	QuestionIndex int  `json:"question_index"`
+	SelectedIndex int  `json:"selected_index"`
+	TimeSpentMs   int64 `json:"time_spent_ms"`
+}
+
+type QuizAnswerResult struct {
+	QuestionIndex int    `json:"question_index"`
+	IsCorrect     bool   `json:"is_correct"`
+	CorrectIndex  int    `json:"correct_index"`
+	Explanation   string `json:"explanation,omitempty"`
+}
+
+type QuizResult struct {
+	SessionID       string `json:"session_id"`
+	TotalQuestions  int    `json:"total_questions"`
+	CorrectAnswers  int    `json:"correct_answers"`
+	IncorrectAnswers int   `json:"incorrect_answers"`
+	ScorePercentage float32 `json:"score_percentage"`
+	TimeSpentMs     int64  `json:"time_spent_ms"`
+}
+
 type CardSet struct {
-	ID              string      `json:"id"`
-	OwnerID         string      `json:"-"`
-	Name            string      `json:"name"`
-	Description     *string     `json:"description,omitempty"`
-	CardCount       int32       `json:"card_count"`
-	LearnedCount    int32       `json:"learned_count"`
-	IsPublic        bool        `json:"is_public"`
-	ViewsCount      int64       `json:"views_count"`
-	ClonesCount     int64       `json:"clones_count,omitempty"`
-	Tags            []string    `json:"tags,omitempty"`
-	CreatedAt       time.Time   `json:"created_at"`
-	Author          *AuthorInfo `json:"author,omitempty"`
+	ID                string      `json:"id"`
+	OwnerID           string      `json:"-"`
+	Name              string      `json:"name"`
+	Description       *string     `json:"description,omitempty"`
+	CardCount         int32       `json:"card_count"`
+	LearnedCount      int32       `json:"learned_count"`
+	MasteryPercentage float32     `json:"mastery_percentage"`
+	IsPublic          bool        `json:"is_public"`
+	ViewsCount        int64       `json:"views_count"`
+	ClonesCount       int64       `json:"clones_count,omitempty"`
+	Tags              []string    `json:"tags,omitempty"`
+	CreatedAt         time.Time   `json:"created_at"`
+	Author            *AuthorInfo `json:"author,omitempty"`
 }
 
 type CardSetDetail struct {
