@@ -298,7 +298,6 @@ services:
     build:
       context: .
       dockerfile: ai-service/Dockerfile.worker
-    container_name: ai-worker
     depends_on:
       - kafka
       - redis
