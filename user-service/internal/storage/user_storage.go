@@ -282,6 +282,55 @@ func (s *UserStorage) GetUserByUsername(ctx context.Context, username string) (*
 	return &user, nil
 }
 
+func (s *UserStorage) UpdateLastActivity(ctx context.Context, id uuid.UUID) error {
+	query := `
+		UPDATE users
+		SET last_activity_at = NOW()
+		WHERE id = $1
+	`
+	_, err := s.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("update last activity: %w", err)
+	}
+	return nil
+}
+
+func (s *UserStorage) GetInactiveUsers(ctx context.Context, inactiveSince time.Time, limit int) ([]models.User, error) {
+	query := `
+		SELECT id, email, name, username, photo_url, created_at, notification_enabled, last_activity_at
+		FROM users
+		WHERE last_activity_at < $1
+		  AND notification_enabled = true
+		ORDER BY last_activity_at ASC
+		LIMIT $2
+	`
+	rows, err := s.db.Query(ctx, query, inactiveSince, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var user models.User
+		err := rows.Scan(
+			&user.ID, &user.Email, &user.Name, &user.Username,
+			&user.PhotoURL, &user.CreatedAt, &user.NotificationEnabled,
+			&user.LastActivityAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (s *UserStorage) UpdateUser(ctx context.Context, id uuid.UUID, name, username string, notificationEnabled bool) (*models.User, error) {
 	query := `
 		UPDATE users
@@ -291,6 +340,35 @@ func (s *UserStorage) UpdateUser(ctx context.Context, id uuid.UUID, name, userna
 	`
 	var user models.User
 	row := s.db.QueryRow(ctx, query, id, name, username, notificationEnabled)
+	err := row.Scan(
+		&user.ID, &user.Email, &user.Name, &user.Username,
+		&user.PhotoURL, &user.CreatedAt, &user.NotificationEnabled,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	// Загружаем провайдеры отдельно
+	user.Providers, err = s.getUserProviders(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("load providers: %w", err)
+	}
+
+	return &user, nil
+}
+
+func (s *UserStorage) UpdateNotificationSettings(ctx context.Context, id uuid.UUID, notificationEnabled bool) (*models.User, error) {
+	query := `
+		UPDATE users
+		SET notification_enabled = $2
+		WHERE id = $1
+		RETURNING id, email, name, username, photo_url, created_at, notification_enabled
+	`
+	var user models.User
+	row := s.db.QueryRow(ctx, query, id, notificationEnabled)
 	err := row.Scan(
 		&user.ID, &user.Email, &user.Name, &user.Username,
 		&user.PhotoURL, &user.CreatedAt, &user.NotificationEnabled,
@@ -536,5 +614,74 @@ func (s *UserStorage) CopyCardSet(ctx context.Context, req CopyCardSetRequest) e
 		return fmt.Errorf("copy cards: %w", err)
 	}
 
+	return nil
+}
+
+// SaveDeviceToken saves or updates a device token for push notifications
+func (s *UserStorage) SaveDeviceToken(ctx context.Context, userID uuid.UUID, deviceType, token, appVersion string) error {
+	query := `
+		INSERT INTO device_tokens (user_id, device_type, token, app_version, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, NOW(), NOW())
+		ON CONFLICT (user_id, device_type, token) DO UPDATE
+		SET app_version = $4, updated_at = NOW()
+	`
+	_, err := s.db.Exec(ctx, query, userID, deviceType, token, appVersion)
+	if err != nil {
+		return fmt.Errorf("save device token: %w", err)
+	}
+	return nil
+}
+
+// GetDeviceTokens returns all device tokens for a user
+func (s *UserStorage) GetDeviceTokens(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error) {
+	query := `
+		SELECT id, user_id, device_type, token, app_version, created_at, updated_at
+		FROM device_tokens
+		WHERE user_id = $1
+		ORDER BY updated_at DESC
+	`
+	rows, err := s.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tokens []models.DeviceToken
+	for rows.Next() {
+		var token models.DeviceToken
+		err := rows.Scan(
+			&token.ID, &token.UserID, &token.DeviceType, &token.Token,
+			&token.AppVersion, &token.CreatedAt, &token.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, token)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tokens, nil
+}
+
+// DeleteDeviceToken removes a device token
+func (s *UserStorage) DeleteDeviceToken(ctx context.Context, userID uuid.UUID, token string) error {
+	query := `DELETE FROM device_tokens WHERE user_id = $1 AND token = $2`
+	_, err := s.db.Exec(ctx, query, userID, token)
+	if err != nil {
+		return fmt.Errorf("delete device token: %w", err)
+	}
+	return nil
+}
+
+// DeleteAllDeviceTokens removes all device tokens for a user (e.g., on logout)
+func (s *UserStorage) DeleteAllDeviceTokens(ctx context.Context, userID uuid.UUID) error {
+	query := `DELETE FROM device_tokens WHERE user_id = $1`
+	_, err := s.db.Exec(ctx, query, userID)
+	if err != nil {
+		return fmt.Errorf("delete all device tokens: %w", err)
+	}
 	return nil
 }

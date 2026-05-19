@@ -72,6 +72,39 @@ func (h *ProfileHandler) UpdateMyProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": mapToPrivate(updated)})
 }
 
+func (h *ProfileHandler) UpdateNotificationSettings(c *gin.Context) {
+	userIDStr := c.GetString("user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error_type": "unauthorized", "error_message": "invalid user id"})
+		return
+	}
+
+	var req struct {
+		NotificationEnabled bool `json:"notification_enabled" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error_type": "validation_failed", "error_message": err.Error()})
+		return
+	}
+
+	updated, err := h.userSvc.UpdateNotificationSettings(c.Request.Context(), userID, req.NotificationEnabled)
+	if err != nil {
+		if err == services.ErrNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error_type": "not_found", "error_message": "user not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error_type": "internal", "error_message": "failed to update settings"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"notification_enabled": updated.NotificationEnabled,
+		},
+	})
+}
+
 func (h *ProfileHandler) DeleteMyProfile(c *gin.Context) {
 	userIDStr := c.GetString("user_id")
 	userID, err := uuid.Parse(userIDStr)

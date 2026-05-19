@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/models"
@@ -30,6 +31,13 @@ type UserRepository interface {
 	RemoveProviderFromUser(ctx context.Context, userID uuid.UUID, provider string) error
 	GetUserProviders(ctx context.Context, userID uuid.UUID) ([]models.OAuthProvider, error)
 	CopyCardSet(ctx context.Context, req storage.CopyCardSetRequest) error
+	SaveDeviceToken(ctx context.Context, userID uuid.UUID, deviceType, token, appVersion string) error
+	GetDeviceTokens(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error)
+	DeleteDeviceToken(ctx context.Context, userID uuid.UUID, token string) error
+	DeleteAllDeviceTokens(ctx context.Context, userID uuid.UUID) error
+	UpdateLastActivity(ctx context.Context, id uuid.UUID) error
+	GetInactiveUsers(ctx context.Context, inactiveSince time.Time, limit int) ([]models.User, error)
+	UpdateNotificationSettings(ctx context.Context, id uuid.UUID, notificationEnabled bool) (*models.User, error)
 }
 
 type UserService struct {
@@ -120,6 +128,17 @@ func (s *UserService) UpdateUser(ctx context.Context, id uuid.UUID, name, userna
 	return user, nil
 }
 
+func (s *UserService) UpdateNotificationSettings(ctx context.Context, id uuid.UUID, notificationEnabled bool) (*models.User, error) {
+	user, err := s.repo.UpdateNotificationSettings(ctx, id, notificationEnabled)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
 func (s *UserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	err := s.repo.DeleteUser(ctx, id)
 	if errors.Is(err, storage.ErrNotFound) {
@@ -179,4 +198,32 @@ func (s *UserService) SearchUsers(ctx context.Context, req storage.SearchUsersRe
 
 func (s *UserService) CopyCardSet(ctx context.Context, req storage.CopyCardSetRequest) error {
 	return s.repo.CopyCardSet(ctx, req)
+}
+
+// SaveDeviceToken saves or updates a device token for push notifications
+func (s *UserService) SaveDeviceToken(ctx context.Context, userID uuid.UUID, deviceType, token, appVersion string) error {
+	return s.repo.SaveDeviceToken(ctx, userID, deviceType, token, appVersion)
+}
+
+// GetDeviceTokens returns all device tokens for a user
+func (s *UserService) GetDeviceTokens(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error) {
+	return s.repo.GetDeviceTokens(ctx, userID)
+}
+
+// DeleteDeviceToken removes a device token
+func (s *UserService) DeleteDeviceToken(ctx context.Context, userID uuid.UUID, token string) error {
+	return s.repo.DeleteDeviceToken(ctx, userID, token)
+}
+
+// DeleteAllDeviceTokens removes all device tokens for a user (e.g., on logout)
+func (s *UserService) DeleteAllDeviceTokens(ctx context.Context, userID uuid.UUID) error {
+	return s.repo.DeleteAllDeviceTokens(ctx, userID)
+}
+
+func (s *UserService) UpdateLastActivity(ctx context.Context, userID uuid.UUID) error {
+	return s.repo.UpdateLastActivity(ctx, userID)
+}
+
+func (s *UserService) GetInactiveUsers(ctx context.Context, inactiveSince time.Time, limit int) ([]models.User, error) {
+	return s.repo.GetInactiveUsers(ctx, inactiveSince, limit)
 }
