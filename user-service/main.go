@@ -21,6 +21,7 @@ import (
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/config"
 	pb "github.com/karto4ki/karto4ki-backend/user-service/internal/grpc"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/handlers"
+	"github.com/karto4ki/karto4ki-backend/user-service/internal/middleware"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/services"
 	"github.com/karto4ki/karto4ki-backend/user-service/internal/storage"
 )
@@ -52,6 +53,20 @@ func main() {
 	userService := services.NewUserService(userStorage)
 	achievementService := services.NewAchievementService(achievementStorage)
 
+	// Initialize push service
+	pushConfig := services.PushServiceConfig{
+		APNsKeyPath:    os.Getenv("APNS_KEY_PATH"),
+		APNsKeyID:      os.Getenv("APNS_KEY_ID"),
+		APNsTeamID:     os.Getenv("APNS_TEAM_ID"),
+		APNsBundleID:   os.Getenv("APNS_BUNDLE_ID"),
+		APNsProduction: os.Getenv("APNS_PRODUCTION") == "true",
+	}
+	pushService, err := services.NewPushService(pushConfig)
+	if err != nil {
+		log.Printf("Warning: Push service initialization failed: %v", err)
+		log.Println("Push notifications will be disabled")
+	}
+
 	grpcServer := handlers.NewGrpcServer(userService, achievementService)
 	grpcLis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
 	if err != nil {
@@ -79,6 +94,7 @@ func main() {
 	}
 	profileHandler := handlers.NewProfileHandler(userService, fileStorageURL)
 	achievementHandler := handlers.NewAchievementHandler(achievementService)
+	pushHandler := handlers.NewPushHandler(pushService, userService)
 
 	r.GET("/v1.0/username/:username", userHandler.CheckUsername)
 	r.GET("/are-you-a-real-teapot", func(c *gin.Context) {
@@ -92,6 +108,7 @@ func main() {
 
 	auth := r.Group("/v1.0")
 	auth.Use(authMiddleware)
+	auth.Use(middleware.ActivityTrackingMiddleware(userService))
 	{
 		auth.GET("/user/:username", userHandler.GetPublicProfile)
 		auth.GET("/users", userHandler.SearchUsers)
@@ -104,6 +121,15 @@ func main() {
 		auth.DELETE("/me/profile-photo", profileHandler.DeleteProfilePhoto)
 
 		auth.GET("/me/achievements", achievementHandler.GetMyAchievements)
+
+		// Notification settings
+		auth.PATCH("/me/notifications", profileHandler.UpdateNotificationSettings)
+
+		// Push notification endpoints
+		auth.POST("/me/devices", pushHandler.RegisterDevice)
+		auth.GET("/me/devices", pushHandler.GetDevices)
+		auth.DELETE("/me/devices", pushHandler.UnregisterDevice)
+		auth.POST("/me/devices/test", pushHandler.TestPush)
 	}
 
 	httpAddr := fmt.Sprintf(":%d", cfg.HTTPPort)
