@@ -1,0 +1,29 @@
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache git ca-certificates
+
+COPY user-service/go.mod user-service/go.sum ./user-service/
+COPY shared/go.mod shared/go.sum ./shared/
+RUN cd user-service && go mod download
+
+COPY user-service/ ./user-service/
+COPY shared/ ./shared/
+
+WORKDIR /app/user-service
+
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o reminder-worker ./cmd/reminder-worker/main.go
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata
+
+WORKDIR /app
+
+COPY --from=builder /app/user-service/reminder-worker .
+COPY --from=builder /app/user-service/config.yml ./config.yml
+
+EXPOSE 8084
+
+CMD ["./reminder-worker"]

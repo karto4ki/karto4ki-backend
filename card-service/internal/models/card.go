@@ -26,6 +26,7 @@ const (
 	SessionTypeAudio  SessionType = "audio"
 	SessionTypeLearn  SessionType = "learn"
 	SessionTypeQuiz   SessionType = "quiz"
+	SessionTypeAll    SessionType = "all"
 )
 
 type QuizOption struct {
@@ -122,7 +123,7 @@ type AuthorInfo struct {
 
 type StudySession struct {
 	ID            string      `json:"id"`
-	SetID         string      `json:"set_id"`
+	SetID         *string     `json:"set_id,omitempty"`
 	UserID        string      `json:"user_id"`
 	SessionType   SessionType `json:"session_type"`
 	Cards         []Card      `json:"cards"`

@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrForbidden     = errors.New("forbidden")
-	ErrInvalidParam  = errors.New("invalid parameter")
+	ErrNotFound     = errors.New("not found")
+	ErrForbidden    = errors.New("forbidden")
+	ErrInvalidParam = errors.New("invalid parameter")
 )
 
 type CardSetService struct {
@@ -204,7 +204,7 @@ func (s *CardSetService) CloneSet(ctx context.Context, setID, userID string) (*m
 }
 
 type CardService struct {
-	setStorage storage.CardSetStorage
+	setStorage  storage.CardSetStorage
 	cardStorage storage.CardStorage
 }
 
@@ -334,10 +334,10 @@ func (s *CardService) DeleteCard(ctx context.Context, id, userID string) error {
 }
 
 type LearningService struct {
-	setStorage   storage.CardSetStorage
-	cardStorage  storage.CardStorage
+	setStorage     storage.CardSetStorage
+	cardStorage    storage.CardStorage
 	sessionStorage storage.StudySessionStorage
-	statsStorage storage.StatisticsStorage
+	statsStorage   storage.StatisticsStorage
 }
 
 func NewLearningService(setStorage storage.CardSetStorage, cardStorage storage.CardStorage, sessionStorage storage.StudySessionStorage, statsStorage storage.StatisticsStorage) *LearningService {
@@ -368,7 +368,34 @@ func (s *LearningService) StartStudySession(ctx context.Context, setID, userID s
 
 	session := &models.StudySession{
 		ID:          uuid.New().String(),
-		SetID:       setID,
+		SetID:       &setID,
+		UserID:      userID,
+		SessionType: sessionType,
+		Cards:       cards,
+		CreatedAt:   time.Now(),
+	}
+
+	if err := s.sessionStorage.Create(ctx, session); err != nil {
+		return nil, err
+	}
+
+	return session, nil
+}
+
+// StartStudySessionAll starts a study session across ALL user's sets
+func (s *LearningService) StartStudySessionAll(ctx context.Context, userID string, sessionType models.SessionType, limit int32) (*models.StudySession, error) {
+	cards, err := s.cardStorage.GetCardsForStudyAll(ctx, userID, sessionType, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(cards) == 0 {
+		return nil, ErrNotFound
+	}
+
+	session := &models.StudySession{
+		ID:          uuid.New().String(),
+		SetID:       nil,
 		UserID:      userID,
 		SessionType: sessionType,
 		Cards:       cards,
@@ -407,7 +434,12 @@ func (s *LearningService) SubmitAnswer(ctx context.Context, sessionID, cardID, u
 	if timeSpentMinutes < 1 {
 		timeSpentMinutes = 1
 	}
-	_ = s.statsStorage.RecordStudySession(ctx, userID, session.SetID, 1, timeSpentMinutes)
+	
+	setID := ""
+	if session.SetID != nil {
+		setID = *session.SetID
+	}
+	_ = s.statsStorage.RecordStudySession(ctx, userID, setID, 1, timeSpentMinutes)
 
 	return &AnswerResult{
 		CardID:     cardID,

@@ -72,7 +72,7 @@ func main() {
 
 		sets.POST("/:setId/study", learningHandler.StartStudySession)
 		sets.GET("/:setId/stats", learningHandler.GetSetStatistics)
-		
+
 		sets.POST("/:setId/quiz/start", quizHandler.StartQuizSession)
 	}
 
@@ -103,6 +103,7 @@ func main() {
 	me := r.Group("/v1.0/me", authMiddleware)
 	{
 		me.GET("/stats", learningHandler.GetUserStatistics)
+		me.POST("/study-all", learningHandler.StartStudySessionAll)
 	}
 
 	httpAddr := fmt.Sprintf(":%d", cfg.HTTPPort)
