@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -369,7 +368,7 @@ func (s *LearningService) StartStudySession(ctx context.Context, setID, userID s
 
 	session := &models.StudySession{
 		ID:          uuid.New().String(),
-		SetID:       setID,
+		SetID:       &setID,
 		UserID:      userID,
 		SessionType: sessionType,
 		Cards:       cards,
@@ -396,7 +395,7 @@ func (s *LearningService) StartStudySessionAll(ctx context.Context, userID strin
 
 	session := &models.StudySession{
 		ID:          uuid.New().String(),
-		SetID:       "",
+		SetID:       nil,
 		UserID:      userID,
 		SessionType: sessionType,
 		Cards:       cards,
@@ -435,7 +434,12 @@ func (s *LearningService) SubmitAnswer(ctx context.Context, sessionID, cardID, u
 	if timeSpentMinutes < 1 {
 		timeSpentMinutes = 1
 	}
-	_ = s.statsStorage.RecordStudySession(ctx, userID, session.SetID, 1, timeSpentMinutes)
+	
+	setID := ""
+	if session.SetID != nil {
+		setID = *session.SetID
+	}
+	_ = s.statsStorage.RecordStudySession(ctx, userID, setID, 1, timeSpentMinutes)
 
 	return &AnswerResult{
 		CardID:     cardID,
