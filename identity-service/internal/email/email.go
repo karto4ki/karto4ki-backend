@@ -3,6 +3,7 @@ package email
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/smtp"
 )
 
@@ -24,7 +25,7 @@ type SMTPSender struct {
 }
 
 func NewSMTPSender(config *SMTPConfig) *SMTPSender {
-	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
+	auth := smtp.PlainAuth(config.Host, config.Username, config.Password, config.Host)
 	return &SMTPSender{
 		config: config,
 		auth:   auth,
@@ -32,6 +33,7 @@ func NewSMTPSender(config *SMTPConfig) *SMTPSender {
 }
 
 func (s *SMTPSender) SendEmail(ctx context.Context, email, message string) error {
+	log.Printf("start sending")
 	msg := fmt.Sprintf("From: %s\r\n"+
 		"To: %s\r\n"+
 		"Content-Type: text/plain; charset=\"UTF-8\"\r\n"+

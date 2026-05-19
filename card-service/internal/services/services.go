@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	ErrNotFound      = errors.New("not found")
-	ErrForbidden     = errors.New("forbidden")
-	ErrInvalidParam  = errors.New("invalid parameter")
+	ErrNotFound     = errors.New("not found")
+	ErrForbidden    = errors.New("forbidden")
+	ErrInvalidParam = errors.New("invalid parameter")
 )
 
 type CardSetService struct {
@@ -204,7 +204,7 @@ func (s *CardSetService) CloneSet(ctx context.Context, setID, userID string) (*m
 }
 
 type CardService struct {
-	setStorage storage.CardSetStorage
+	setStorage  storage.CardSetStorage
 	cardStorage storage.CardStorage
 }
 
@@ -334,10 +334,10 @@ func (s *CardService) DeleteCard(ctx context.Context, id, userID string) error {
 }
 
 type LearningService struct {
-	setStorage   storage.CardSetStorage
-	cardStorage  storage.CardStorage
+	setStorage     storage.CardSetStorage
+	cardStorage    storage.CardStorage
 	sessionStorage storage.StudySessionStorage
-	statsStorage storage.StatisticsStorage
+	statsStorage   storage.StatisticsStorage
 }
 
 func NewLearningService(setStorage storage.CardSetStorage, cardStorage storage.CardStorage, sessionStorage storage.StudySessionStorage, statsStorage storage.StatisticsStorage) *LearningService {
