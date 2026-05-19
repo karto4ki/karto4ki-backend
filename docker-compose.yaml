@@ -102,6 +102,43 @@ services:
       - HTTP_PORT=8080
       - GRPC_PORT=50051
       - FILE_STORAGE_URL=http://filestorage-service:8081
+      - APNS_KEY_PATH=${APNS_KEY_PATH:-/app/keys/apns/AuthKey.p8}
+      - APNS_KEY_ID=${APNS_KEY_ID}
+      - APNS_TEAM_ID=${APNS_TEAM_ID}
+      - APNS_BUNDLE_ID=${APNS_BUNDLE_ID:-com.karto4ki.app}
+      - APNS_PRODUCTION=${APNS_PRODUCTION:-false}
+      - FIREBASE_KEY_PATH=${FIREBASE_KEY_PATH:-/app/keys/firebase/service-account.json}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+    volumes:
+      - ./user-service/config.yml:/app/config.yml:ro
+      - ./keys:/app/keys:ro
+    restart: on-failure
+
+  reminder-worker:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile.reminder-worker
+    container_name: reminder-worker
+    depends_on:
+      user-db:
+        condition: service_healthy
+      user-flyway:
+        condition: service_completed_successfully
+    environment:
+      - DB_HOST=${USER_DB_HOST:-user-db}
+      - DB_PORT=${USER_DB_PORT:-5432}
+      - DB_USER=${USER_DB_USER:-user}
+      - DB_PASSWORD=${USER_DB_PASSWORD:-password}
+      - DB_NAME=${USER_DB_NAME:-userdb}
+      - DB_SSLMODE=disable
+      - APNS_KEY_PATH=${APNS_KEY_PATH:-/app/keys/apns/AuthKey.p8}
+      - APNS_KEY_ID=${APNS_KEY_ID}
+      - APNS_TEAM_ID=${APNS_TEAM_ID}
+      - APNS_BUNDLE_ID=${APNS_BUNDLE_ID:-com.karto4ki.app}
+      - APNS_PRODUCTION=${APNS_PRODUCTION:-false}
+      - REMINDER_INACTIVE_DAYS=${REMINDER_INACTIVE_DAYS:-3}
+      - REMINDER_BATCH_SIZE=${REMINDER_BATCH_SIZE:-100}
+      - REMINDER_INTERVAL_HOURS=${REMINDER_INTERVAL_HOURS:-24}
     volumes:
       - ./user-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
