@@ -8,11 +8,20 @@ services:
       - ./identity-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
     environment:
-      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_HOST=${SMTP_HOST:-smtp.example.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USERNAME=${SMTP_USERNAME}
       - SMTP_PASSWORD=${SMTP_PASSWORD}
       - SMTP_FROM=${SMTP_FROM}
       - USER_SERVICE_ADDR=userservice:50051
+      - APPLE_KEY_ID=${APPLE_KEY_ID}
+      - APPLE_TEAM_ID=${APPLE_TEAM_ID}
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID}
+      - APPLE_PRIVATE_KEY_PATH=${APPLE_PRIVATE_KEY_PATH:-/app/keys/apple/AuthKey.p8}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - YANDEX_CLIENT_ID=${YANDEX_CLIENT_ID}
+      - YANDEX_CLIENT_SECRET=${YANDEX_CLIENT_SECRET}
     depends_on:
       - identity-redis
       - userservice
@@ -37,8 +46,8 @@ services:
       - "19000:9000"
       - "19001:9001"
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -68,9 +77,9 @@ services:
     image: postgres:15
     container_name: user-db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: userdb
+      POSTGRES_USER=${USER_DB_USER:-user}
+      POSTGRES_PASSWORD=${USER_DB_PASSWORD:-password}
+      POSTGRES_DB=${USER_DB_NAME:-userdb}
     volumes:
       - user_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -93,52 +102,15 @@ services:
       filestorage-service:
         condition: service_started
     environment:
-      - DB_HOST=user-db
-      - DB_PORT=5432
-      - DB_USER=user
-      - DB_PASSWORD=password
-      - DB_NAME=userdb
-      - DB_SSLMODE=disable
-      - HTTP_PORT=8080
-      - GRPC_PORT=50051
-      - FILE_STORAGE_URL=http://filestorage-service:8081
-      - APNS_KEY_PATH=${APNS_KEY_PATH:-/app/keys/apns/AuthKey.p8}
-      - APNS_KEY_ID=${APNS_KEY_ID}
-      - APNS_TEAM_ID=${APNS_TEAM_ID}
-      - APNS_BUNDLE_ID=${APNS_BUNDLE_ID:-com.karto4ki.app}
-      - APNS_PRODUCTION=${APNS_PRODUCTION:-false}
-      - FIREBASE_KEY_PATH=${FIREBASE_KEY_PATH:-/app/keys/firebase/service-account.json}
-      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-    volumes:
-      - ./user-service/config.yml:/app/config.yml:ro
-      - ./keys:/app/keys:ro
-    restart: on-failure
-
-  reminder-worker:
-    build:
-      context: .
-      dockerfile: user-service/Dockerfile.reminder-worker
-    container_name: reminder-worker
-    depends_on:
-      user-db:
-        condition: service_healthy
-      user-flyway:
-        condition: service_completed_successfully
-    environment:
       - DB_HOST=${USER_DB_HOST:-user-db}
       - DB_PORT=${USER_DB_PORT:-5432}
       - DB_USER=${USER_DB_USER:-user}
       - DB_PASSWORD=${USER_DB_PASSWORD:-password}
       - DB_NAME=${USER_DB_NAME:-userdb}
       - DB_SSLMODE=disable
-      - APNS_KEY_PATH=${APNS_KEY_PATH:-/app/keys/apns/AuthKey.p8}
-      - APNS_KEY_ID=${APNS_KEY_ID}
-      - APNS_TEAM_ID=${APNS_TEAM_ID}
-      - APNS_BUNDLE_ID=${APNS_BUNDLE_ID:-com.karto4ki.app}
-      - APNS_PRODUCTION=${APNS_PRODUCTION:-false}
-      - REMINDER_INACTIVE_DAYS=${REMINDER_INACTIVE_DAYS:-3}
-      - REMINDER_BATCH_SIZE=${REMINDER_BATCH_SIZE:-100}
-      - REMINDER_INTERVAL_HOURS=${REMINDER_INTERVAL_HOURS:-24}
+      - HTTP_PORT=8080
+      - GRPC_PORT=50051
+      - FILE_STORAGE_URL=http://filestorage-service:8081
     volumes:
       - ./user-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
@@ -166,9 +138,9 @@ services:
     image: postgres:15
     container_name: card-db
     environment:
-      POSTGRES_USER: card
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: carddb
+      POSTGRES_USER=${CARD_DB_USER:-card}
+      POSTGRES_PASSWORD=${CARD_DB_PASSWORD:-password}
+      POSTGRES_DB=${CARD_DB_NAME:-carddb}
     volumes:
       - card_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -193,7 +165,7 @@ services:
     environment:
       - HTTP_PORT=8082
       - GRPC_PORT=50052
-      - USER_SERVICE_URL=http://userservice:8080
+      - USER_SERVICE_URL=${USER_SERVICE_URL:-http://userservice:8080}
     volumes:
       - ./card-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
@@ -231,7 +203,7 @@ services:
     environment:
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_BASE_URL=${LLM_BASE_URL:-https://openrouter.ai/api/v1}
-      - LLM_MODEL=${LLM_MODEL:-meta-llama/llama-3.1-70b-instruct}
+      - LLM_MODEL=${LLM_MODEL:-openai/gpt-4o-mini}
       - LLM_MOCK=${LLM_MOCK:-false}
     restart: on-failure
 
@@ -280,7 +252,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
     restart: on-failure
 
   zookeeper:
@@ -300,12 +272,13 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
+      - "9093:9093"
     environment:
       KAFKA_BROKER_ID: "1"
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092"
-      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9093"
       KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
@@ -344,11 +317,11 @@ services:
     environment:
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_BASE_URL=${LLM_BASE_URL:-https://openrouter.ai/api/v1}
-      - LLM_MODEL=${LLM_MODEL:-meta-llama/llama-3.1-70b-instruct}
+      - LLM_MODEL=${LLM_MODEL:-openai/gpt-4o-mini}
       - LLM_MOCK=${LLM_MOCK:-false}
-      - KAFKA_BROKERS=kafka:29092
-      - KAFKA_CONSUMER_GROUP=ai-workers
-      - WORKER_CONCURRENCY=3
+      - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:29092}
+      - KAFKA_CONSUMER_GROUP=${KAFKA_CONSUMER_GROUP:-ai-workers}
+      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-3}
     deploy:
       replicas: 2
     restart: on-failure
