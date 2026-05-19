@@ -370,9 +370,13 @@ func (s *studySessionStorage) Create(ctx context.Context, session *models.StudyS
 func (s *studySessionStorage) GetByID(ctx context.Context, id string) (*models.StudySession, error) {
 	query := `SELECT id, set_id, user_id, session_type, created_at FROM study_sessions WHERE id = $1`
 	session := &models.StudySession{}
-	err := s.db.QueryRowContext(ctx, query, id).Scan(&session.ID, &session.SetID, &session.UserID, &session.SessionType, &session.CreatedAt)
+	var setID sql.NullString
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&session.ID, &setID, &session.UserID, &session.SessionType, &session.CreatedAt)
 	if err != nil {
 		return nil, err
+	}
+	if setID.Valid {
+		session.SetID = &setID.String
 	}
 	return session, nil
 }
