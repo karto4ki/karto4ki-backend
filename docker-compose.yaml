@@ -8,11 +8,11 @@ services:
       - ./identity-service/config.yml:/app/config.yml:ro
       - ./keys:/app/keys:ro
     environment:
-      - SMTP_HOST=${SMTP_HOST:-smtp.yandex.com}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_USERNAME=${SMTP_USERNAME:-AnnaShvareva05@yandex.ru}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-mfrwxyjsevnfntww}
-      - SMTP_FROM=${SMTP_FROM:-AnnaShvareva05@yandex.ru}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
       - USER_SERVICE_ADDR=userservice:50051
       - APPLE_KEY_ID=${APPLE_KEY_ID}
       - APPLE_TEAM_ID=${APPLE_TEAM_ID}
